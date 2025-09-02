@@ -1,12 +1,21 @@
 # Creator
 
 #### Table of Contents
+- [Purpose](#purpose)
 - [Requirements](#requirements)
+- [Usage Cases](#usage-cases)
 - [Example](#example)
 - [Technical Details](#technical-details)
 
+## Purpose
+
+Creator is a dataset generator intended for use to assist the setup of database- [TODO]
+
 ### Requirements
 [Luau 0.670+](https://github.com/luau-lang/luau/releases): As internal methods use @self to refer to each other.
+
+### Usage Cases
+[TODO]
 
 ## Example
 
