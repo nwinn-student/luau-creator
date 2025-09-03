@@ -55,6 +55,7 @@ The format used to serialize the dataset is located in [FORMAT.md](./FORMAT.md).
 
 <details>
 <summary>Types defined for use in Creator</summary>
+
 ```luau
 
 -- The collection type used to define creator properties
@@ -63,7 +64,7 @@ type Element<Collection> = {
 	Name: string,
 	Value: any?,
 	Attributes: {[string]: any}?,
-	Collection: Collection
+	Collection: Collection?
 }
 
 type Collection = {
@@ -80,7 +81,8 @@ type CreatorObject = {
 	read Name: string,
 	
 	data: (self: CreatorObject) -> any,
-	GetAttributes: (self: CreatorObject, position: string) -> {[string]: any}
+	GetAttributes: (self: CreatorObject, position: string) -> {[string]: any},
+	GetComponents: (self: CreatorObject, position: string) -> {[string]: any},
 	
 	update: (self: CreatorObject) -> (),
 	fetch: (self: CreatorObject) -> buffer
@@ -94,8 +96,8 @@ type Creator = {
 	SetProperty: (self: Creator, name: string, property: Collection) -> Creator,
 	GetProperties: (self: Creator) -> {[string]: Collection},
 	
-	load: (self: Creator, id: string): CreatorObject,
-	migrate: (self: Creator, fn: MigrationFunction)
+	load: (self: Creator, id: string) -> CreatorObject,
+	migrate: (self: Creator, fn: MigrationFunction) -> ()
 }
 ```
 </details>
@@ -113,7 +115,7 @@ type Creator = {
 
 
 **Collection**
-* **Variadic**: Additional Elements to the collection, unspecified in the initial collection, shall be added to the serialized output. 
+* **Variadic**: Additional Elements to the collection, unspecified in the initial collection, shall be added to the serialized output.
 * **Defaults**: The default values associated with a CollectionElement's `Value` property, typically one value per type.  i.e. "", 0, vector.zero, etc.
 * **SaveAttributes**: Determines which attributes of the Element to add to the serialized output.
 * **RemoveDefaultAttributes**: Whether saved attributes will be filtered according to the set default values.
@@ -130,6 +132,7 @@ type Creator = {
 * **Name**: TODO.
 * `data(self): any`: TODO.
 * `GetAttributes(self, position: string): {[string]: any}`: TODO.
+* `GetComponents(self, position: string): {[string]: any}`: TODO.
 * `update(self)`: TODO.
 * `fetch(self): buffer`: TODO.
 
