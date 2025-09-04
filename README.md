@@ -24,25 +24,22 @@ A user needs to create a schema for a database[TODO]
 More in-depth examples can be found in [examples](./examples).
 
 ```luau
-local creator = require("./Creator")
+local Creator = require("./Creator")
 
-type Collection = Creator.Collection
-
-local Bar: Collection = {
+local Bar = {
 	{Id=1,
-		Name = "Greeting"
+		Name = 'Greeting'
 	}
 }
 
-local Foo = creator.create("Foo")
-	:SetProperty("Bar", Bar)
+local Foo = Creator.create('Foo')
+	:withProperty('Bar', Bar)
 
 -- Sets up a dataset for User_12345
-local userData = Foo:load("User_12345")
+local userData = Foo:new('User_12345')
 
 -- .. modifications to the data
-local data = userData:data()
-data.Bar.Greeting = 500
+userData.Bar.Greeting = 500
 
 userData:update() -- Necessary!
 
@@ -61,7 +58,7 @@ The format used to serialize the dataset is located in [FORMAT.md](./FORMAT.md).
 ```luau
 
 -- The collection type used to define creator properties
-type DataColumn<Collection> = {
+type Element<Collection> = {
 	-- Primary key
 	Id: number,
 	
@@ -76,39 +73,42 @@ type DataColumn<Collection> = {
 }
 
 type Collection = {
+	[number]: Element<Collection>,
+
 	Variadic: boolean?,
 	Defaults: {any}?,
 	SaveAttributes: {string}?,
-	RemoveDefaultAttributes: boolean?,
-	
-	[number]: DataColumn<Collection>
+	RemoveDefaultAttributes: boolean?
 }
 
 -- The creator type used to define creator and its objects
 
--- The actual data within a database associated with a name
-type DataRecord = {
-	read Name: string,
-	
-	data: (self: DataRecord) -> any,
-	GetAttributes: (self: DataRecord, position: string) -> {[string]: any},
-	GetComponents: (self: DataRecord, position: string) -> {[string]: any},
-	
-	update: (self: DataRecord, data: any?) -> (),
-	fetch: (self: DataRecord) -> buffer
+type MetaRecord = {
+	GetAttributes: (self: MetaRecord) -> {[string]: any},
+	GetComponents: (self: MetaRecord) -> {[string]: MetaRecord},
 }
 
-type Migrator = (name: string, data: any) -> any
+-- The actual data within a database
+type DataRecord = {
+	-- Property
+	[string]: MetaRecord,
+	
+	read Name: string,
+	
+	load: (self: DataRecord, data: buffer) -> (),
+	update: (self: DataRecord) -> (),
+	fetchRecord: (self: DataRecord) -> buffer
+}
 
 type Database = {
 	read Name: string,
 	
-	SetProperty: (self: Database, name: string, property: DataProperty) -> Database,
-	GetProperties: (self: Database) -> {[string]: DataProperty},
+	withProperty: (self: Database, name: string, property: Collection) -> Database,
+	SetProperty: (self: Database, name: string, property: Collection) -> (),
+	GetProperty: (self: Database, name: string) -> Collection,
+	GetProperties: (self: Database) -> {[string]: Collection},
 	
-	load: (self: Database, id: string) -> DataRecord,
-	
-	migrate: (self: Database, fn: Migrator) -> ()
+	new: (self: Database, id: string) -> DataRecord,
 }
 ```
 </details>
@@ -119,29 +119,31 @@ type Database = {
 
 **Database**
 * **Name**: The database name
-* `SetProperty(self, name: string, property: Collection): Store`: TODO.
+* `withProperty(self, name: string, property: Collection): Database`: TODO.
+* `SetProperty(self, name: string, property: Collection)`: TODO.
+* `GetProperty(self, name: string): Collection`: TODO.
 * `GetProperties(self): {[string]: Collection}`: TODO.
-* `load(self, id: string): DataRecord`: TODO.
-* `migrate(self, fn: Migrator)`: Sets the function called when `update(self, data: any?)` is called for a record to migrate data to the existing format if possible.
+* `new(self, id: string): DataRecord`: TODO.
+
 
 **Collection**
-* **Variadic**: Additional DataColumns to the collection, unspecified in the initial collection, shall be added to the serialized output.
-* **Defaults**: The default values associated with a collection DataColumn's `Value` property, typically one value per type.  i.e. "", 0, vector.zero, etc.
-* **SaveAttributes**: Determines which attributes of the DataColumn to add to the serialized output.
+* **Variadic**: Additional Elements to the collection, unspecified in the initial collection, shall be added to the serialized output.
+* **Defaults**: The default values associated with a collection Element's `Value` property, typically one value per type.  i.e. "", 0, vector.zero, etc.
+* **SaveAttributes**: Determines which attributes of the Element to add to the serialized output.
 * **RemoveDefaultAttributes**: Whether saved attributes will be filtered according to the set default values.
 
 
-**DataColumn**
-* **Id**: The identifier of the DataColumn used to allow for the Name of the element to change without needing to implement migration patterns.
-* **Name**: The key of the DataColumn within the database.
-* **Value**: The value of the DataColumn within the database.  
-* **Attributes**: Metadata associated with the DataColumn that could be saved alongside the column's data.
+**Element**
+* **Id**: The identifier of the Element used to allow for the Name of the element to change without needing to implement migration patterns.
+* **Name**: The key of the Element within the database.
+* **Value**: The value of the Element within the database.  
+* **Attributes**: Metadata associated with the Element that could be saved alongside the column's data.
 
 
 **DataRecord**
 * **Name**: The name associated with the record, the primary key.
-* `data(self): any`: Returns data associated with the record.
+* `load(self, data: any)`: Loads the provided data into the record.
 * `GetAttributes(self, position: string): {[string]: any}`: Returns the metadata associated with the record at a specified position.  A position is defined as key[.key], meaning that the metadata for data.key1.key2.etc is retrieved.
 * `GetComponents(self, position: string): {[string]: any}`: Returns the components associated with the record at a specified position.  A position is defined as key[.key], meaning that the components for data.key1.key2.etc are retrieved. TODO: Explain the purpose.
-* `update(self, data: any?)`: Updates the internal data associated with the record based on the external data provided using `data(self): any`, or the provided data.  The provided data is typically used when initially loading, as the migrator function is called to adjust the data to properly conform to the existing format.
-* `fetch(self): buffer`: Returns a serialized form of the internal data.  The last call's return value is held until `update(self, data: any?)` is called to reduce potential overhead. TODO: Remove this sentence?
+* `update(self)`: Updates the internal data associated with the record based on the external data provided using `data(self): any`, or the provided data.
+* `fetch(self): buffer`: Returns a serialized form of the internal data.  The last call's return value is held until `update(self)` is called to reduce potential overhead. TODO: Remove this sentence?
