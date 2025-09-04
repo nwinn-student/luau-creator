@@ -94,7 +94,7 @@ type DataRecord = {
 	GetAttributes: (self: DataRecord, position: string) -> {[string]: any},
 	GetComponents: (self: DataRecord, position: string) -> {[string]: any},
 	
-	update: (self: DataRecord) -> (),
+	update: (self: DataRecord, data: any?) -> (),
 	fetch: (self: DataRecord) -> buffer
 }
 
@@ -122,8 +122,7 @@ type Database = {
 * `SetProperty(self, name: string, property: Collection): Store`: TODO.
 * `GetProperties(self): {[string]: Collection}`: TODO.
 * `load(self, id: string): DataRecord`: TODO.
-* `migrate(self, fn: Migrator)`: TODO.
-
+* `migrate(self, fn: Migrator)`: Sets the function called when `update(self, data: any?)` is called for a record to migrate data to the existing format if possible.
 
 **Collection**
 * **Variadic**: Additional DataColumns to the collection, unspecified in the initial collection, shall be added to the serialized output.
@@ -134,16 +133,15 @@ type Database = {
 
 **DataColumn**
 * **Id**: The identifier of the DataColumn used to allow for the Name of the element to change without needing to implement migration patterns.
-* **Name**: The key of the DataColumn within the dataset.
-* **Value**: The value of the DataColumn within the dataset.  
-* **Attributes**: Properties associated with the DataColumn.
+* **Name**: The key of the DataColumn within the database.
+* **Value**: The value of the DataColumn within the database.  
+* **Attributes**: Metadata associated with the DataColumn that could be saved alongside the column's data.
 
 
 **DataRecord**
-* **Name**: TODO.
-* `data(self): any`: TODO.
-* `GetAttributes(self, position: string): {[string]: any}`: TODO.
-* `GetComponents(self, position: string): {[string]: any}`: TODO.
-* `update(self)`: TODO.
-* `fetch(self): buffer`: TODO.
-
+* **Name**: The name associated with the record, the primary key.
+* `data(self): any`: Returns data associated with the record.
+* `GetAttributes(self, position: string): {[string]: any}`: Returns the metadata associated with the record at a specified position.  A position is defined as key[.key], meaning that the metadata for data.key1.key2.etc is retrieved.
+* `GetComponents(self, position: string): {[string]: any}`: Returns the components associated with the record at a specified position.  A position is defined as key[.key], meaning that the components for data.key1.key2.etc are retrieved. TODO: Explain the purpose.
+* `update(self, data: any?)`: Updates the internal data associated with the record based on the external data provided using `data(self): any`, or the provided data.  The provided data is typically used when initially loading, as the migrator function is called to adjust the data to properly conform to the existing format.
+* `fetch(self): buffer`: Returns a serialized form of the internal data.  The last call's return value is held until `update(self, data: any?)` is called to reduce potential overhead. TODO: Remove this sentence?
