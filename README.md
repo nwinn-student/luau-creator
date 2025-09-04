@@ -11,11 +11,13 @@
 
 Creator is a dataset generator intended for use to assist the setup of database- [TODO]
 
+Essentially, Creator creates a [database](https://en.wikipedia.org/wiki/Database) and adds tables to the database as properties whose columns are specified by the elements within the property.[TODO]
+
 ### Requirements
 [Luau 0.670+](https://github.com/luau-lang/luau/releases): As internal methods use @self to refer to each other.
 
 ### Usage Cases
-[TODO]
+A user needs to create a schema for a database[TODO]
 
 ## Example
 
@@ -59,12 +61,18 @@ The format used to serialize the dataset is located in [FORMAT.md](./FORMAT.md).
 ```luau
 
 -- The collection type used to define creator properties
-type Element<Collection> = {
+type DataColumn<Collection> = {
+	-- Primary key
 	Id: number,
+	
 	Name: string,
 	Value: any?,
+	
+	-- Metadata
 	Attributes: {[string]: any}?,
-	Collection: Collection?
+	
+	-- Foreign key
+	Join: Collection?
 }
 
 type Collection = {
@@ -73,62 +81,65 @@ type Collection = {
 	SaveAttributes: {string}?,
 	RemoveDefaultAttributes: boolean?,
 	
-	[number]: Element<Collection>
+	[number]: DataColumn<Collection>
 }
 
 -- The creator type used to define creator and its objects
-type CreatorObject = {
+
+-- The actual data within a database associated with a name
+type DataRecord = {
 	read Name: string,
 	
-	data: (self: CreatorObject) -> any,
-	GetAttributes: (self: CreatorObject, position: string) -> {[string]: any},
-	GetComponents: (self: CreatorObject, position: string) -> {[string]: any},
+	data: (self: DataRecord) -> any,
+	GetAttributes: (self: DataRecord, position: string) -> {[string]: any},
+	GetComponents: (self: DataRecord, position: string) -> {[string]: any},
 	
-	update: (self: CreatorObject) -> (),
-	fetch: (self: CreatorObject) -> buffer
+	update: (self: DataRecord) -> (),
+	fetch: (self: DataRecord) -> buffer
 }
 
-type MigrationFunction = (name: string, data: any) -> any
+type Migrator = (name: string, data: any) -> any
 
-type Creator = {
+type Database = {
 	read Name: string,
 	
-	SetProperty: (self: Creator, name: string, property: Collection) -> Creator,
-	GetProperties: (self: Creator) -> {[string]: Collection},
+	SetProperty: (self: Database, name: string, property: DataProperty) -> Database,
+	GetProperties: (self: Database) -> {[string]: DataProperty},
 	
-	load: (self: Creator, id: string) -> CreatorObject,
-	migrate: (self: Creator, fn: MigrationFunction) -> ()
+	load: (self: Database, id: string) -> DataRecord,
+	
+	migrate: (self: Database, fn: Migrator) -> ()
 }
 ```
 </details>
 
-`Creator.create(name: string): Creator`: TODO.
-`Creator.fromName(name: string): Creator`: TODO.
+`Creator.create(name: string): Database`: TODO.
+`Creator.fromName(name: string): Database`: TODO.
 
 
-**Creator**
-* **Name**: The dataset name
-* `SetProperty(self, name: string, property: Collection): Creator`: TODO.
+**Database**
+* **Name**: The database name
+* `SetProperty(self, name: string, property: Collection): Store`: TODO.
 * `GetProperties(self): {[string]: Collection}`: TODO.
-* `load(self, id: string): CreatorObject`: TODO.
-* `migrate(self, fn: MigrationFunction)`: TODO.
+* `load(self, id: string): DataRecord`: TODO.
+* `migrate(self, fn: Migrator)`: TODO.
 
 
 **Collection**
-* **Variadic**: Additional Elements to the collection, unspecified in the initial collection, shall be added to the serialized output.
-* **Defaults**: The default values associated with a CollectionElement's `Value` property, typically one value per type.  i.e. "", 0, vector.zero, etc.
-* **SaveAttributes**: Determines which attributes of the Element to add to the serialized output.
+* **Variadic**: Additional DataColumns to the collection, unspecified in the initial collection, shall be added to the serialized output.
+* **Defaults**: The default values associated with a collection DataColumn's `Value` property, typically one value per type.  i.e. "", 0, vector.zero, etc.
+* **SaveAttributes**: Determines which attributes of the DataColumn to add to the serialized output.
 * **RemoveDefaultAttributes**: Whether saved attributes will be filtered according to the set default values.
 
 
-**Element<Collection>**
-* **Id**: The identifier of the Element used to allow for the Name of the element to change without needing to implement migration patterns.
-* **Name**: The key of the Element within the dataset.
-* **Value**: The value of the Element within the dataset.  
-* **Attributes**: Properties associated with the Element.
+**DataColumn**
+* **Id**: The identifier of the DataColumn used to allow for the Name of the element to change without needing to implement migration patterns.
+* **Name**: The key of the DataColumn within the dataset.
+* **Value**: The value of the DataColumn within the dataset.  
+* **Attributes**: Properties associated with the DataColumn.
 
 
-**CreatorObject**
+**DataRecord**
 * **Name**: TODO.
 * `data(self): any`: TODO.
 * `GetAttributes(self, position: string): {[string]: any}`: TODO.
