@@ -87,5 +87,46 @@ local userData = Creator.GetSaveData("Database", 12345)
 From the example, needing to pass "Database" every time is incredibly painful.
 
 
+## Migration
+Realization of the importance of migration support within the API.
 
+Various aspects seemed common, such as the need to migrate an attribute name from one name to another.
 
+Mainly undocumented as it was quickly superceded by another design (baked into this design).
+
+### Design
+* `Creator.MigrateAttribute`: Removed
+* `Creator.MigrateIndex`: Removed
+* `Creator.MigrateForm`: Removed
+* `Creator.new(string): Store`
+* `Creator.add`: Removed
+* `Creator.load`: Removed
+* `Creator.getSaveData`: Removed
+* `Creator.update`: Removed
+* `Creator.default`: Removed
+* `Creator.generateSettings`
+* :Store
+*	`Name: string`
+*	`add(string, CreatorSettings)`
+*	`load(number)`
+*	`getSaveData(number)`
+*	`update(number)`
+*	`default(...)`
+*	`migrate.attribute(()->())`
+*	`migrate.index(()->())`
+*	`migrate.form(()->())`
+
+### Example
+```luau
+
+local store = Creator.new("Database")
+store:add("Foo", ??)
+store:load(12345)
+local userData = store:getSaveData(12345)
+
+```
+
+### Comments
+GenerateSettings seems incredibly complex, and wasn't even designed due to the assumption of the complexity from looking at Initial's `Creator.Add`.
+
+Maybe we can, when we create the Database, insert these Settings?
