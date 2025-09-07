@@ -5,16 +5,16 @@ Each design will be formatted in such a manner:
 ## Design Name
 A purpose, if any.
 
-#### Design
+### Design
 `functionName(paramType...): returnType`: Optional explanation.
 
-#### Example
+### Example
 ```luau
 	-- Example here to observe the beauty
 	-- and observe pain points
 ```
 
-#### Comments
+### Comments
 Written painpoints.
 
 
