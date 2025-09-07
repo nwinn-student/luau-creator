@@ -51,6 +51,7 @@ local serialData = userData:fetch()
 ## Technical Details
 
 The format used to serialize the dataset is located in [FORMAT.md](./FORMAT.md).
+The design process and behind the scenes work can be found in [DESIGN_PROCESS.md](./DESIGN_PROCESS.md).
 
 <details>
 <summary>Types defined for use in Creator</summary>
