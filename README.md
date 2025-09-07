@@ -146,4 +146,4 @@ type Database = {
 * `GetAttributes(self, position: string): {[string]: any}`: Returns the metadata associated with the record at a specified position.  A position is defined as key[.key], meaning that the metadata for data.key1.key2.etc is retrieved.
 * `GetComponents(self, position: string): {[string]: any}`: Returns the components associated with the record at a specified position.  A position is defined as key[.key], meaning that the components for data.key1.key2.etc are retrieved. TODO: Explain the purpose.
 * `update(self)`: Updates the internal data associated with the record based on the external data provided using `data(self): any`, or the provided data.
-* `fetch(self): buffer`: Returns a serialized form of the internal data.  The last call's return value is held until `update(self)` is called to reduce potential overhead. TODO: Remove this sentence?
+* `fetchRecord(self): buffer`: Returns a serialized form of the internal data.  The last call's return value is held until `update(self)` is called to reduce potential overhead. TODO: Remove this sentence?
