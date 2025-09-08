@@ -105,6 +105,7 @@ Mainly undocumented as it was quickly superceded by another design (baked into t
 * `Creator.update`: Removed
 * `Creator.default`: Removed
 * `Creator.generateSettings`
+* `Creator.create`: Removed**
 * :Store
 *	`Name: string`
 *	`add(string, CreatorSettings)`
@@ -115,6 +116,8 @@ Mainly undocumented as it was quickly superceded by another design (baked into t
 *	`migrate.attribute(()->())`
 *	`migrate.index(()->())`
 *	`migrate.form(()->())`
+* :CreatorSettings
+* 	`create`: Removed
 
 ### Example
 ```luau
@@ -130,3 +133,93 @@ local userData = store:getSaveData(12345)
 GenerateSettings seems incredibly complex, and wasn't even designed due to the assumption of the complexity from looking at Initial's `Creator.Add`.
 
 Maybe we can, when we create the Database, insert these Settings?
+
+
+## Phase 1 Exploration
+How do we create Property?
+
+What should the collection format be?
+
+What can we get rid of?
+
+Yes, this is one design, you should see the later ones.
+
+### Design
+* `Creator.create(string, ...CreatorProperty(???)): CreatorObject`
+* :CreatorObject
+* 	`update(string)`
+* 	`load(string)`
+* 	`fetch(string): buffer`
+* 	`read Name: string`
+* 	`GetProperties(): {CreatorProperty}`
+* 	`migrate((string, {})->({}), ...(string, {})->({}))`
+* `CreatorProperty.create(string): CreatorProperty`: Replaced
+* 	`default`: Within CreatorProperty, never got got shifted to CreatorCollection further down
+* `CreatorProperty.for(string, CreatorObject): CreatorProperty`
+* `CreatorProperty.create(string, CreatorObject)`: Same as `CreatorProperty.for`
+* :CreatorProperty
+* 	`read Name: string`
+* 	`collection(): CreatorCollection`
+* 	`read Parent: CreatorObject`
+* :CreatorCollection
+* 	`Defaults(...any)`
+* 	`Variadic: boolean`
+* 	`SaveAttributes(...string)`
+* 	`generate(): CreatorGenerator`
+* :CreatorGenerator
+* 	`insert(string, string, {[string]: any}): CreatorGeneratorObject`: Takes in the Id, Name, and Attributes (removed for `Attributes({[string]: any})`)
+* :CreatorGeneratorObject
+* 	`Value: any`
+* 	`Attributes({[string]: any})`
+* 	`withValue(any): CreatorGeneratorObject`: The first introduction to with!
+* :Collection Replaces CreatorCollection
+```luau
+{
+	Variadic: boolean?, Defaults: {any}?, 
+	
+	-- Removed!!
+	RemoveDefaults: "None" | "All" | "Attribute" | "Value",
+	
+	RemoveDefaultAttributes: boolean,
+	SaveAttributes: {string},
+	[number]: {
+		-- value cannot be removed sadly
+		Name: string, Value: any?, 
+		Attributes: {[string]: any}?, 
+		Id: number, -- Acts like a constant, expect 1 -> n
+		Collection: Collection?
+	}?
+}
+```
+* 	`withVariadic(boolean?): Collection`
+* 	`withDefaults({any}?): Collection`
+* 	`withRemoveDefaults(...): ...`
+* 	`withSaveAttributes(...): ...`
+* 	`insert(string, string)`: Removed, (id, name)
+* 	`toProperty`: Removed, you will see this later
+* 	`generate(): CollectionGenerator`
+* :CollectionGenerator Also replaced
+* 	`insert(string, string)`: (id, name)
+* 	`toCollection(): Collection`
+
+
+### Example
+```luau
+
+local store = Creator.create("Database")
+
+local Foo = CreatorProperty.create("Foo", store)
+Foo:collection()
+	:generate():insert(1, "Baz")
+
+store:load("12345")
+local userData = store:fetch("12345")
+
+```
+
+### Comments
+The property design is quite clunky, but the data design is non-existent.  How do we use the data?  Most of the settings or properties were seemingly removed, which is nice.
+
+NO to the below!
+What if we re-add support for Variant?  It forces class to exist and it forces Defaults to be `{[string]: any}?`.  Issue is how to support new types?  We can always use typeof.  
+Add Variant to collection, Variant also to element (why defaults is a tab).  No to element, Variant is used to specify a single type, if it is nil all types are supported. Only when class is clone! (??? what does this mean).
