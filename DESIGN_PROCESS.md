@@ -259,7 +259,7 @@ What can we get rid of?
 </details>
 
 <details>
-<summary>CollectionGenerator: Replaced CreatorGenerator</summary>
+<summary>CollectionGenerator: Replaces CreatorGenerator</summary>
 
 * `insert(number, string)`: (id, name)
 * `toCollection(): Collection`
