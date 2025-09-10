@@ -30,6 +30,15 @@ Written painpoints.
 </details>
 
 
+# Specification
+The specification evolved throughout the designs.
+
+1. As Databases are persistent, memory-usage is of highest priority to minimize.
+2. The data must be easily accessible.
+3. The data must be easy to add to and remove from.
+4. Migration support must be built-in.
+5. Inserting the data into BufferSerializer must produce an output that can be deserialized and reproduce the input.
+
 # Designs
 
 ## Initial
@@ -187,7 +196,7 @@ What can we get rid of?
 </details>
 
 <details>
-<summary>CreatorCollection</summary>
+<summary>CreatorCollection: Replaced by Collection</summary>
 
 * `Defaults(...any)`
 * `Variadic: boolean`
@@ -197,14 +206,14 @@ What can we get rid of?
 </details>
 
 <details>
-<summary>CreatorGenerator</summary>
+<summary>CreatorGenerator: Replaced by CollectionGenerator</summary>
 
 * `insert(string, string, {[string]: any}): CreatorGeneratorObject`: Takes in the Id, Name, and Attributes (removed for `Attributes({[string]: any})`)
 
 </details>
 
 <details>
-<summary>CreatorGeneratorObject</summary>
+<summary>CreatorGeneratorObject: Unused</summary>
 
 * `Value: any`
 * `Attributes({[string]: any})`
@@ -250,9 +259,9 @@ What can we get rid of?
 </details>
 
 <details>
-<summary>CollectionGenerator: Also replaced</summary>
+<summary>CollectionGenerator: Replaced CreatorGenerator</summary>
 
-* `insert(string, string)`: (id, name)
+* `insert(number, string)`: (id, name)
 * `toCollection(): Collection`
 
 </details>
