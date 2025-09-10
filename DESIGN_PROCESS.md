@@ -155,9 +155,11 @@ What should the collection format be?
 What can we get rid of?
 
 ### Design
-`Creator.create(string, ...CreatorProperty(???)): CreatorObject`
+`Creator.create(string, ...CreatorProperty): CreatorObject`: Removed to allow for Properties to attach themselves to the CreatorObject.
 
-`CreatorProperty.create(string): CreatorProperty`: Replaced
+`Creator.create(string): CreatorObject`
+
+`CreatorProperty.create(string): CreatorProperty`: Replaced to allow for Properties to attach themselves to the CreatorObject
 
 `CreatorProperty.for(string, CreatorObject): CreatorProperty`
 
@@ -271,13 +273,9 @@ local userData = store:fetch("12345")
 ```
 
 ### Comments
-1. Property design is quite clunky.  
-2. The data design is non-existent.
-3. How do we use the data?
-4. Most of the settings or properties were seemingly removed, which is nice.
-
-NO to the below!
-5. What if we re-add support for Variant?  It forces class to exist and it forces Defaults to be `{[string]: any}?`.  Issue is how to support new types?  We can always use typeof.  
-Add Variant to collection, Variant also to element (why defaults is a tab).  No to element, Variant is used to specify a single type, if it is nil all types are supported. Only when class is clone! (??? what does this mean).
+1. Property design is hard to follow, there are too many types and functions.  
+2. The data design is non-existent.  How do we use the data?
+3. Most of the settings or properties were seemingly removed, which is nice.
+4. What if we re-add support for Variant (the ability to restrict and specify value types)?
 
 </details>
