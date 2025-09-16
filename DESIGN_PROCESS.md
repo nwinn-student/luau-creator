@@ -1,3 +1,13 @@
+# Specification
+The specification evolved throughout the designs.
+
+1. Creation process of database and it's underlying structure.
+2. Due to the persistence of databases, memory-usage is of highest priority.
+3. The data must be easily accessible.
+4. The data must be easy to add to and remove from.
+5. The data must be serializable.
+6. Extensibility is a priority.
+
 # Design Process
 
 Each design will be formatted in such a manner:
@@ -29,15 +39,6 @@ Written painpoints.
 
 </details>
 
-
-# Specification
-The specification evolved throughout the designs.
-
-1. As Databases are persistent, memory-usage is of highest priority to minimize.
-2. The data must be easily accessible.
-3. The data must be easy to add to and remove from.
-4. Migration support must be built-in.
-5. Inserting the data into BufferSerializer must produce an output that can be deserialized and reproduce the input.
 
 # Designs
 
