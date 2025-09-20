@@ -382,3 +382,61 @@ From [499fb07](https://github.com/nwinn-student/luau-creator/blob/499fb07b0eb001
 </details>
 
 
+## Design #5
+<details>
+<summary>Removal of migration support</summary>
+
+### Reasoning
+Migration can be added back into the design at a later stage if needed. 
+
+### Design
+`Creator`: See [#4](#design-#4)
+
+<details>
+<summary>Database: See [#4](#design-#4)</summary>
+
+* `SetProperty(name: string, property: Collection)`
+* `GetProperty(name: string): Property`
+* `withProperty(name: string, property: Collection): Database`
+* `new(id: string): DataRecord`
+* `load: nil`
+* `migrate: nil`
+</details>
+
+<details>
+<summary>DataRecord: See [#4](#design-#4)</summary>
+
+* `data: nil`
+* `GetData(): any`
+* `load(data: any)`: Loads the provided data into the record.
+* `update()`: Updates the internal data associated with the record based on the external data provided using data(self): any, or the provided data.
+
+</details>
+
+<details>
+<summary>Collection: See [#4](#design-#4)</summary>
+</details>
+
+<details>
+<summary>Element: See [#4](#design-#4)</summary>
+</details>
+
+### Example
+```luau
+	local store = Creator.create("Database")
+	
+	store:withProperty("Foo", {
+		{Id=1,
+			Name = "Baz"
+		}
+	})
+	
+	local userData = store:new("12345")
+	local serialData = userData:fetch()
+```
+
+### Comments
+1. See [#4](#design-#4), minus the second comment.
+
+#### Minor Updates that don't quantify a new version
+1. [2751292](https://github.com/nwinn-student/luau-creator/commit/2751292e87fa350eb9bc91769b3ae727458391fd) changed fetch to fetchRecord.
