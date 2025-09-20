@@ -1,7 +1,7 @@
 # Specification
 The specification evolved throughout the designs.
 
-1. Creation process of database and it's underlying structure.
+1. Creator assists in the creation process of a database and it's underlying structure.
 2. Due to the persistence of databases, memory-usage is of highest priority.
 3. The data must be easily accessible.
 4. The data must be easy to add to and remove from.
@@ -12,7 +12,7 @@ The specification evolved throughout the designs.
 
 Each design will be formatted in such a manner:
 
-## Design Name
+## Design Number
 <details>
 <summary>A purpose, if any.</summary>
 
@@ -42,7 +42,7 @@ Written painpoints.
 
 # Designs
 
-## Initial
+## Design #1
 <details>
 <summary>Rip apart an existing private project into a usable external component.</summary>
 
@@ -85,9 +85,12 @@ local userData = Creator.GetSaveData("Database", 12345)
 </details>
 
 
-## Migration
+## Design #2
 <details>
 <summary>Introduce the idea that future/past support is valuable.</summary>
+
+### Reasoning
+IsLoaded had no use internally and could be easily created w/ a wrapper.  The prior version did not have ways to support a migration path between versions.  Using an object-oriented approach to avoid passing the name of the store simplified the experience.
 
 ### Design
 
@@ -117,11 +120,11 @@ local userData = Creator.GetSaveData("Database", 12345)
 <summary>Store</summary>
 
 * `Name: string`: Name of the store
-* `add(string, CreatorSettings)`
+* `add(string, CreatorSettings)`: Adds contents to a store.
 * `load(number)`
 * `getSaveData(number)`
 * `update(number)`
-* `default(...)`
+* `default(...)`: Sets up the default values
 * `migrate.attribute(()->())`
 * `migrate.index(()->())`
 * `migrate.form(()->())`
@@ -139,7 +142,7 @@ local userData = Creator.GetSaveData("Database", 12345)
 ```luau
 
 local store = Creator.new("Database")
-store:add("Foo", ??)
+store:add("Foo", Creator.generateSettings(??))
 store:load(12345)
 local userData = store:getSaveData(12345)
 
@@ -153,7 +156,7 @@ local userData = store:getSaveData(12345)
 </details>
 
 
-## Phase 1 Exploration
+## Design #3
 <details>
 <summary>Simplify generating settings.</summary>
 
@@ -289,3 +292,93 @@ local userData = store:fetch("12345")
 4. What if we re-add support for Variant (the ability to restrict and specify value types)?
 
 </details>
+
+
+## Design #4
+<details>
+<summary>Data accessibility</summary>
+
+### Reasoning
+From [499fb07](https://github.com/nwinn-student/luau-creator/blob/499fb07b0eb00175e8a6047c4bf428d917d72d1f/README.md) to [421a09c](https://github.com/nwinn-student/luau-creator/commit/421a09c8fc10f2a35af9e1d3554652da4c0fd669).  This design and a few of the following designs were created with intent to focus on the data accessibility aspect rather than the Collection painpoint.
+
+### Design
+`Creator.create(string): Creator`
+
+`Creator.fromName(string): Creator`
+
+<details>
+<summary>MigrationFunction</summary>
+
+* `(name: string, data: any) -> any`
+
+</details>
+
+<details>
+<summary>Creator</summary>
+
+* `Name: string`: The dataset name
+* `SetProperty(self, name: string, property: Collection): Creator`
+* `GetProperties(self): {[string]: Collection}`
+* `load(self, id: string): CreatorObject`
+* `migrate(self, MigrationFunction)`
+
+</details>
+
+<details>
+<summary>CreatorObject</summary>
+
+* `Name: string`: The name associated with the record, the primary key.
+* `data(self): any`: Returns data associated with the record.
+* `GetAttributes(self, position: string): {[string]: any}`: Returns the metadata associated with the record at a specified position.  A position is defined as key[.key], meaning that the metadata for data.key1.key2.etc is retrieved.
+* `GetComponents(self, position: string): {[string]: any}`: From [27863a0](https://github.com/nwinn-student/luau-creator/blob/27863a0cfe109815068b2b91380a0d86499af899/README.md).   Returns the components associated with the record at a specified position.  A position is defined as key[.key], meaning that the components for data.key1.key2.etc are retrieved.
+* `update(self)`: Updates the internal data associated with the record based on the external data provided using `data(self): any`, or the provided data.  The provided data is typically used when initially loading, as the migrator function is called to adjust the data to properly conform to the existing format.
+* `fetch(self): buffer`: Returns a serialized form of the internal data.  The last call's return value is held until `update(self, data: any?)` is called to reduce potential overhead.
+
+</details>
+
+<details>
+<summary>Collection: See [#3](#design-#3)</summary>
+
+* `Variadic`: Additional Elements to the collection, unspecified in the initial collection, shall be added to the serialized output.
+* `Defaults`: The default values associated with a CollectionElement's `Value` property, typically one value per type.  i.e. "", 0, vector.zero, etc.
+* `SaveAttributes`: Determines which attributes of the Element to add to the serialized output.
+* `RemoveDefaultAttributes`: Whether saved attributes will be filtered according to the set default values.
+
+</details>
+
+<details>
+<summary>Element<Collection></summary>
+
+* `Id`: The identifier of the Element used to allow for the Name of the element to change without needing to implement migration patterns.
+* `Name`: The key of the Element within the dataset.
+* `Value`: The value of the Element within the dataset.  
+* `Attributes`: Properties associated with the Element.
+
+</details>
+
+### Example
+```luau
+	local store = Creator.create("Database")
+	
+	local store:SetProperty("Foo", {
+		{Id=1,
+			Name = "Baz"
+		}
+	})
+	
+	local userData = store:load("12345")
+	local serialData = userData:fetch()
+```
+
+### Comments
+1. Passing a table for the Collection is confusing and prone to error since at the time of this design there was little to no support for autocomplete w/ creating tables in functions.
+2. SetProperty is confusing, it is expected to purely set the property and not return anything.
+3. Data is flawed in that to obtain deep versions, `GetComponents("blah.ble")` is required, instead of being able to do `blah.ble`.
+
+#### Minor Updates that don't quantify a new version
+1. [7d770d4](https://github.com/nwinn-student/luau-creator/commit/7d770d4954b001ae8bea514a125b3747787732c5) modified Creator to become Database and CreatorObject to become DataRecord and MigrationFunction to become Migrator.
+2. [421a09c](https://github.com/nwinn-student/luau-creator/commit/421a09c8fc10f2a35af9e1d3554652da4c0fd669) `update` now takes another parameter, for migration.
+
+</details>
+
+
