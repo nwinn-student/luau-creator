@@ -1,11 +1,6 @@
 local Creator = require("./Creator")
 
---[[
-	How it would look w/o functions:
-	
-	You can actually pass the below in and it will act the same, 
-		it is merely preference.
-	
+--[[	
 	{
 		Name = "Foo", 
 		Property = {
@@ -42,28 +37,26 @@ local Creator = require("./Creator")
 	}
 ]]
 
-local Database = Creator.fromProperties(
-	Creator.propertyBuilder("Foo")
-		:templateElement("Baz")
+local Database = Creator.databaseBuilder()
+	:templateRecord("Foo")
+		:templateRecord("Baz")
 			:withValue(0)
-			-- Allows for Baz to have attached Elements
-			:templateProperty()
-			:build()
+			-- Implied that Baz could have attached elements
+			-- up to the serializer to decide whether or not to save.
+			-- Extenders could require templateRecord() to save.
 		:build()
-		:templateElement("Bar")
+		:templateRecord("Bar")
 			:withValue("Hello World!")
-			:templateProperty()
-				:templateElement("Foo")
-					:withValue(vector.create(1, 2, 3))
-				:build()
+			:templateRecord("Foo")
+				:withValue(vector.create(1, 2, 3))
 			:build()
 		:build()
-		:toProperty(),
-	Creator.propertyBuilder("Sample")
-		:templateElement("Greeting")
+	:build()
+	:templateRecord("Sample")
+		:templateRecord("Greeting")
 			:withValue("Welcome")
 			-- Acquaintances, Casual, Close, Intimate
 			:withAttributes({ Connection = "Acquaintances" })
 		:build()
-		:toProperty()
-	)
+	:build()
+	:toDatabase()

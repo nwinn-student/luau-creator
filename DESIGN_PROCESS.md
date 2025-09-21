@@ -440,3 +440,7 @@ Migration can be added back into the design at a later stage if needed.
 
 #### Minor Updates that don't quantify a new version
 1. [2751292](https://github.com/nwinn-student/luau-creator/commit/2751292e87fa350eb9bc91769b3ae727458391fd) changed fetch to fetchRecord.
+
+</details>
+
+
