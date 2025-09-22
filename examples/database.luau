@@ -1,4 +1,4 @@
-local Creator = require("./Creator")
+local Creator = require("../src")
 
 --[[	
 	{
@@ -60,3 +60,5 @@ local Database = Creator.databaseBuilder()
 		:build()
 	:build()
 	:toDatabase()
+
+print(Database)

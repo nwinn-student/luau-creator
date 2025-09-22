@@ -1,4 +1,4 @@
-local Creator = require("./Creator")
+local Creator = require("../src")
 
 -- Most of these are built on assumptions
 -- the internals can be modified by other extenders
@@ -93,6 +93,7 @@ end
 local newRecord = dbMethods.newRecord
 
 function dbMethods:newRecord()
+	-- MUCH harder to serialize
 	return setmetatable({}, 
 		{__index = newRecord(self), __newindex = replicator})
 end
@@ -120,7 +121,7 @@ function rbMethods:withValue(value: any)
 	if repl then
 		repl("Value", value, false)
 	end
-	self.Value = value
+	getmetatable(self).__index.Value = value
 	return self
 end
 
@@ -130,3 +131,15 @@ function rbMethods:withAttributes(data: {[string]: any})
 	return self
 end
 
+-- so replicator is flawed..
+print(Creator.databaseBuilder()
+	:templateRecord("Foo")
+		:withValue(1)
+		:templateRecord("Baz")
+			:withValue(2)
+		:build()
+	:build()
+	:toDatabase()
+	:newRecord()
+		:builder()
+			:withValue(4):toRecord().Value)
