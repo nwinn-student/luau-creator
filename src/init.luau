@@ -5,7 +5,7 @@ type Attributes<T> = {[string]: T}
 
 -- Flawed in that it is a duplicate of DatabaseBuilder
 --- 
-type RecordBuilder = {
+export type RecordBuilder = {
 	write __index: RecordBuilder,
 	write Value: any?,
 	write Attributes: Attributes<any>?,
@@ -35,7 +35,7 @@ type SimpleDataRecord = {
 	read Attributes: Attributes<any>?,
 }
 
-type DataRecord = {
+export type DataRecord = {
 	write __index: DataRecord,
 	
 	-- TODO: Allow for records to be supported by the type system
@@ -55,7 +55,7 @@ type DataRecord = {
 	builder: (self: DataRecord) -> RecordBuilder
 }
 
-type Database = {
+export type Database = {
 	write __index: Database,
 	write Template: SimpleDataRecord,
 	
@@ -66,7 +66,7 @@ type Database = {
 	frozenTemplate: (self: Database) -> SimpleDataRecord
 }
 
-type DatabaseBuilder = {
+export type DatabaseBuilder = {
 	write __index: DatabaseBuilder,
 	write Parent: DatabaseBuilder?,
 	write Value: any?,
@@ -225,18 +225,5 @@ end
 function Creator.databaseBuilder()
 	return setmetatable({}, DatabaseBuilder) :: DatabaseBuilder
 end
-
--- Wow.. this was so easy to implement..
-print(Creator.databaseBuilder()
-	:templateRecord("Foo")
-		:withValue(1)
-		:templateRecord("Baz")
-			:withValue(2)
-		:build()
-	:build()
-	:toDatabase()
-	:newRecord()
-		:builder()
-			:withValue(4))
 
 return Creator
