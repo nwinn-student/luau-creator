@@ -9,6 +9,9 @@ type RecordBuilder = Creator.RecordBuilder
 
 type Database = Creator.Database
 type DataRecord = Creator.DataRecord
+type SimpleDataRecord = Creator.SimpleDataRecord
+
+type Attributes<T> = {[string]: T}
 
 local dbBuilder = Creator.databaseBuilder
 
@@ -16,54 +19,6 @@ local dbBuilderMethods = getmetatable(dbBuilder()).__index
 local dbMethods = getmetatable(dbBuilder():toDatabase()).__index
 local drMethods = getmetatable(dbBuilder():toDatabase():newRecord()).__index
 local rbMethods = getmetatable(dbBuilder():toDatabase():newRecord():builder()).__index
-
-
-
--- Migrator -- Version control
--- DatabaseBuilder
---     Add withVersion(number) and withMigrator((data: DataRecord) -> DataRecord)
---     Add withId(number) -- for smaller output size
--- Database
---     Add loadRecord(buffer): DataRecord and version()
---     Add encodeRecord(DataRecord): buffer
-
-function dbBuilderMethods:withVersion(version: number)
-	self.Version = version
-	return self
-end
-
-type Migrator = (data: DataRecord) -> DataRecord
-function dbBuilderMethods:withMigrator(fn: Migrator)
-	self.Migrator = fn
-	return self
-end
-
--- Optional: Helps encode produce smaller output size
---     but is painful to migrate
-function dbBuilderMethods:withId(id: number)
-	self.Id = id
-	return self
-end
-
-function dbMethods:loadRecord(data: buffer)
-	-- decode complexity depends on how dense you want the 
-	-- buffer to be (how much preprocessing you did)
-	return self.Migrator(decode(data))
-end
-
-function dbMethods:version()
-	return self.Version
-end
-
-function dbMethods:encodeRecord(record: DataRecord): buffer
-	-- encode complexity depends on how dense you want the 
-	-- buffer to be (how much preprocessing to do)
-	-- smaller output sizes may be a priority
-	-- legibility may be priority [JSON]
-	return encode(record)
-end
-
-
 
 -- Replicator -- Pass changes around
 -- Could be wrong, it is rather complex and there is no implementation 
@@ -131,7 +86,7 @@ function rbMethods:withAttributes(data: {[string]: any})
 	return self
 end
 
--- so replicator is flawed..
+-- NOT WORKING YET
 print(Creator.databaseBuilder()
 	:templateRecord("Foo")
 		:withValue(1)

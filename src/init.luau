@@ -3,7 +3,7 @@
 
 type Attributes<T> = {[string]: T}
 
--- Flawed in that it is a duplicate of DatabaseBuilder
+-- Flawed in that it is a near-duplicate of DatabaseBuilder
 --- 
 export type RecordBuilder = {
 	write __index: RecordBuilder,
@@ -26,7 +26,7 @@ export type RecordBuilder = {
 	toRecord: (self: RecordBuilder) -> DataRecord
 }
 
-type SimpleDataRecord = {
+export type SimpleDataRecord = {
 	-- TODO: Allow for records to be supported by the type system
 	[string]: DataRecord,
 	read Value: any,
@@ -68,6 +68,7 @@ export type Database = {
 
 export type DatabaseBuilder = {
 	write __index: DatabaseBuilder,
+	write __extend: {[string]: true?},
 	write Parent: DatabaseBuilder?,
 	write Value: any?,
 	write Attributes: Attributes<any>?,
@@ -93,9 +94,11 @@ export type DatabaseBuilder = {
 }
 
 local Creator = {}
+local Extendor = {}
 
 local DatabaseBuilder = {}
 DatabaseBuilder.__index = DatabaseBuilder
+DatabaseBuilder.__extend = Extendor
 
 local Database = {}
 Database.__index = Database
@@ -129,11 +132,23 @@ end
 function DatabaseBuilder:toDatabase()
 	-- Optional: Remove all Parents
 	-- Some extenders may want Parent for internal use
+	-- FIXME: Failure to easily support addition of properties
+	-- Sadly, the fix will be much less performant
+	-- We could have extendNames: {[string]: true?}
+	-- We could also continue if not table, which has caviats
+	-- If we do extendNames we would need a way to modify it
+	-- could hide it in DatabaseBuilder
+	
 	local function removeParent(data: {[any]: any})
 		for name, record in data do
-			if name == "Value" or name == "Attributes" then
+			if name == "Value" 
+				or name == "Attributes"
+				or Extendor[name] then
 				continue
 			end
+			
+			-- if type(value) ~= "table" then continue end
+			
 			record.Parent = nil
 			table.freeze(record :: DatabaseBuilder)
 			removeParent(record)
@@ -160,6 +175,14 @@ local function deepCopy(data: {[any]: any})
 			copy[key] = table.clone(value)
 			continue
 		end
+		-- Add extension support in deepCopy
+		if Extendor[key] then
+			-- We don't know how extenders want to define this
+			-- value could be a table, some may want it to be
+			-- cloned, others deepCloned, others the same table
+			copy[key] = value
+			continue
+		end
 		
 		copy[key] = deepCopy(value)
 	end
@@ -167,11 +190,6 @@ local function deepCopy(data: {[any]: any})
 end
 
 function Database:newRecord()
-	-- TODO: Just return empty table and populate it lazily?
-	-- or recreate it entirely??
-	
-	-- I think recreating will be easier to support
-	-- extenders
 	return deepCopy(self.Template)
 end
 
@@ -191,21 +209,6 @@ function DataRecord:records()
 end
 
 function DataRecord:builder()
-	-- What if we remove builder and instead have a way
-	-- to create a record via name
-	-- like: addRecord(name: string) or buildRecord
-	-- or.. we keep it w/ this BUT allow Parent to be 
-	-- used to navigate
-	-- issue is that it breaks the "Must be serializable"
-	-- clause
-	-- so.. ??
-	-- withRecord
-	-- withValue
-	-- just keep same lol
-	-- we can remove build from the design to limit what users can do
-	-- but still allow for them do to ALOT
-	-- doing that, avoids issues where Parent is not deleted 
-	-- and causes external modules to fail when serializing
 	return setmetatable(self, RecordBuilder)
 end
 
