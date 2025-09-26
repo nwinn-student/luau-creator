@@ -33,11 +33,6 @@ export type DataRecord = {
 	-- TODO: Allow for records to be supported by the type system
 	[string]: DataRecord,
 	Value: any,
-		
-	--- Returns a table referencing the attached records.    
-	--- Modifications to the table directly has no impact 
-	--- on the underlying record.
-	read records: (self: DataRecord) -> Named<DataRecord>?,
 	
 	read builder: (self: DataRecord) -> RecordBuilder
 }
@@ -167,13 +162,6 @@ end
 
 function Database:frozenTemplate()
 	return self.Template
-end
-
-function DataRecord:records()
-	local copy = table.clone(self)
-	copy.Value = nil
-	copy.Attributes = nil
-	return copy
 end
 
 function DataRecord:builder()
