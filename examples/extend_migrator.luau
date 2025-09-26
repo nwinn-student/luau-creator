@@ -8,16 +8,12 @@ type DataRecord = Creator.DataRecord
 type SimpleDataRecord = Creator.SimpleDataRecord
 
 type Migrator = (data: DataRecord) -> DataRecord
-type Attributes<T> = {[string]: T}
 
 type MigratorDatabase = {
 	write __index: MigratorDatabase,
 	write Template: SimpleDataRecord,
 	
-	--- Create a new record based on the database
 	newRecord: (self: MigratorDatabase) -> DataRecord,
-	--- Returns the internal template of the record used to construct
-	--- the database
 	frozenTemplate: (self: MigratorDatabase) -> SimpleDataRecord,
 
 	loadRecord: (self: MigratorDatabase, data: buffer) -> DataRecord,
@@ -30,29 +26,16 @@ type MigratorDatabaseBuilder = {
 	write __extend: {[string]: true?},
 	write Parent: MigratorDatabaseBuilder?,
 	write Value: any?,
-	write Attributes: Attributes<any>?,
 	write Version: number?,
 	write Migrator: Migrator?,
 	
-	--- Create the blueprint for a record
-	---
-	--- @param name the name associated with the record
-	---
-	--- @return a DatabaseBuilder for the created record
 	templateRecord: (self: MigratorDatabaseBuilder, name: string) -> MigratorDatabaseBuilder,
-	--- Build the blueprint for the record
-	---
-	--- @return the holding record's DatabaseBuilder
 	build: (self: MigratorDatabaseBuilder) -> MigratorDatabaseBuilder,
 	
-	--- Imprint the value into the record
 	withValue: (self: MigratorDatabaseBuilder, value: any) -> MigratorDatabaseBuilder,
-	--- Imprint the attributes into the record
-	withAttributes: (self: MigratorDatabaseBuilder, attr: Attributes<any>) -> MigratorDatabaseBuilder,
 	withVersion: (self: MigratorDatabaseBuilder, version: number) -> MigratorDatabaseBuilder,
 	withMigrator: (self: MigratorDatabaseBuilder, fn: Migrator) -> MigratorDatabaseBuilder,
 	
-	--- Create and return a Database
 	toDatabase: (self: MigratorDatabaseBuilder) -> MigratorDatabase
 }
 

@@ -1,14 +1,13 @@
 --!strict
 --!optimize 2
 
-type Attributes<T> = {[string]: T}
+type Named<T> = {[string]: T}
 
 -- Flawed in that it is a near-duplicate of DatabaseBuilder
 --- 
 export type RecordBuilder = {
 	write __index: RecordBuilder,
 	write Value: any?,
-	write Attributes: Attributes<any>?,
 	
 	--- Create the blueprint for a record
 	---
@@ -17,12 +16,8 @@ export type RecordBuilder = {
 	--- @return a RecordBuilder for the created record
 	templateRecord: (self: RecordBuilder, name: string) -> RecordBuilder,
 	
-	--- Imprint the value into the record
 	withValue: (self: RecordBuilder, value: any) -> RecordBuilder,
-	--- Imprint the attributes into the record
-	withAttributes: (self: RecordBuilder, attr: Attributes<any>) -> RecordBuilder,
 	
-	--- Create and return a record
 	toRecord: (self: RecordBuilder) -> DataRecord
 }
 
@@ -30,9 +25,6 @@ export type SimpleDataRecord = {
 	-- TODO: Allow for records to be supported by the type system
 	[string]: DataRecord,
 	read Value: any,
-	
-	-- TODO: If possible, allow for the type system to also support attributes
-	read Attributes: Attributes<any>?,
 }
 
 export type DataRecord = {
@@ -41,16 +33,11 @@ export type DataRecord = {
 	-- TODO: Allow for records to be supported by the type system
 	[string]: DataRecord,
 	Value: any,
-	
-	-- TODO: If possible, allow for the type system to also support attributes
-	write Attributes: Attributes<any>?,
-	
-	--- Returns the attached attributes
-	attributes: (self: DataRecord) -> Attributes<any>?,
+		
 	--- Returns a table referencing the attached records.    
 	--- Modifications to the table directly has no impact 
 	--- on the underlying record.
-	records: (self: DataRecord) -> Attributes<DataRecord>?,
+	records: (self: DataRecord) -> Named<DataRecord>?,
 	
 	builder: (self: DataRecord) -> RecordBuilder
 }
@@ -68,10 +55,10 @@ export type Database = {
 
 export type DatabaseBuilder = {
 	write __index: DatabaseBuilder,
-	write __extend: {[string]: true?},
+	-- Allows for extenders to have more control over the specifics
+	write __extend: Named<(true | "clone" | "hide" | "avoid")?>,
 	write Parent: DatabaseBuilder?,
 	write Value: any?,
-	write Attributes: Attributes<any>?,
 	
 	--- Create the blueprint for a record
 	---
@@ -84,12 +71,8 @@ export type DatabaseBuilder = {
 	--- @return the holding record's DatabaseBuilder
 	build: (self: DatabaseBuilder) -> DatabaseBuilder,
 	
-	--- Imprint the value into the record
 	withValue: (self: DatabaseBuilder, value: any) -> DatabaseBuilder,
-	--- Imprint the attributes into the record
-	withAttributes: (self: DatabaseBuilder, attr: Attributes<any>) -> DatabaseBuilder,
 	
-	--- Create and return a Database
 	toDatabase: (self: DatabaseBuilder) -> Database
 }
 
@@ -124,30 +107,19 @@ function DatabaseBuilder:withValue(value: any)
 	return self
 end
 
-function DatabaseBuilder:withAttributes(attr: Attributes<any>)
-	self.Attributes = attr
-	return self
-end
-
 function DatabaseBuilder:toDatabase()
-	-- Optional: Remove all Parents
-	-- Some extenders may want Parent for internal use
-	-- FIXME: Failure to easily support addition of properties
-	-- Sadly, the fix will be much less performant
-	-- We could have extendNames: {[string]: true?}
-	-- We could also continue if not table, which has caviats
-	-- If we do extendNames we would need a way to modify it
-	-- could hide it in DatabaseBuilder
-	
 	local function removeParent(data: {[any]: any})
 		for name, record in data do
-			if name == "Value" 
-				or name == "Attributes"
-				or Extendor[name] then
+			if name == "Value" then
 				continue
 			end
-			
-			-- if type(value) ~= "table" then continue end
+			local extend = Extendor[name]
+			if extend then
+				if extend == "hide" then
+					data[name] = nil
+				end
+				continue
+			end
 			
 			record.Parent = nil
 			table.freeze(record :: DatabaseBuilder)
@@ -171,16 +143,16 @@ local function deepCopy(data: {[any]: any})
 		if key == "Value" then
 			continue
 		end
-		if key == "Attributes" then
-			copy[key] = table.clone(value)
-			continue
-		end
-		-- Add extension support in deepCopy
-		if Extendor[key] then
-			-- We don't know how extenders want to define this
-			-- value could be a table, some may want it to be
-			-- cloned, others deepCloned, others the same table
-			copy[key] = value
+		
+		local extend = Extendor[key]
+		if extend then
+			if extend == "avoid" then
+				continue
+			end
+			copy[key] = if extend == "clone" then
+					table.clone(value)
+				else
+					value
 			continue
 		end
 		
@@ -195,10 +167,6 @@ end
 
 function Database:frozenTemplate()
 	return self.Template
-end
-
-function DataRecord:attributes()
-	return self.Attributes
 end
 
 function DataRecord:records()
@@ -219,7 +187,6 @@ function RecordBuilder:templateRecord(name: string)
 end
 
 RecordBuilder.withValue = DatabaseBuilder.withValue
-RecordBuilder.withAttributes = DatabaseBuilder.withAttributes
 
 function RecordBuilder:toRecord()
 	return setmetatable(self, DataRecord)
