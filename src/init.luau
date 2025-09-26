@@ -14,11 +14,11 @@ export type RecordBuilder = {
 	--- @param name the name associated with the record
 	---
 	--- @return a RecordBuilder for the created record
-	templateRecord: (self: RecordBuilder, name: string) -> RecordBuilder,
+	read templateRecord: (self: RecordBuilder, name: string) -> RecordBuilder,
 	
-	withValue: (self: RecordBuilder, value: any) -> RecordBuilder,
+	read withValue: (self: RecordBuilder, value: any) -> RecordBuilder,
 	
-	toRecord: (self: RecordBuilder) -> DataRecord
+	read toRecord: (self: RecordBuilder) -> DataRecord
 }
 
 export type SimpleDataRecord = {
@@ -37,9 +37,9 @@ export type DataRecord = {
 	--- Returns a table referencing the attached records.    
 	--- Modifications to the table directly has no impact 
 	--- on the underlying record.
-	records: (self: DataRecord) -> Named<DataRecord>?,
+	read records: (self: DataRecord) -> Named<DataRecord>?,
 	
-	builder: (self: DataRecord) -> RecordBuilder
+	read builder: (self: DataRecord) -> RecordBuilder
 }
 
 export type Database = {
@@ -47,10 +47,10 @@ export type Database = {
 	write Template: SimpleDataRecord,
 	
 	--- Create a new record based on the database
-	newRecord: (self: Database) -> DataRecord,
+	read newRecord: (self: Database) -> DataRecord,
 	--- Returns the internal template of the record used to construct
 	--- the database
-	frozenTemplate: (self: Database) -> SimpleDataRecord
+	read frozenTemplate: (self: Database) -> SimpleDataRecord
 }
 
 export type DatabaseBuilder = {
@@ -65,15 +65,15 @@ export type DatabaseBuilder = {
 	--- @param name the name associated with the record
 	---
 	--- @return a DatabaseBuilder for the created record
-	templateRecord: (self: DatabaseBuilder, name: string) -> DatabaseBuilder,
+	read templateRecord: (self: DatabaseBuilder, name: string) -> DatabaseBuilder,
 	--- Build the blueprint for the record
 	---
 	--- @return the holding record's DatabaseBuilder
-	build: (self: DatabaseBuilder) -> DatabaseBuilder,
+	read build: (self: DatabaseBuilder) -> DatabaseBuilder,
 	
-	withValue: (self: DatabaseBuilder, value: any) -> DatabaseBuilder,
+	read withValue: (self: DatabaseBuilder, value: any) -> DatabaseBuilder,
 	
-	toDatabase: (self: DatabaseBuilder) -> Database
+	read toDatabase: (self: DatabaseBuilder) -> Database
 }
 
 local Creator = {}
