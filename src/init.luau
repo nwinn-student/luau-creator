@@ -3,83 +3,85 @@
 
 type Named<T> = {[string]: T}
 
-export type SimpleDataRecord = {
+export type SimpleRecord = {
 	-- TODO: Allow for records to be supported by the type system
-	[string]: DataRecord,
+	[string]: Record,
 	read Value: any,
 }
 
-export type DataRecord = {
-	write __index: DataRecord,
+export type Record = {
+	write __index: Record,
 	
 	-- TODO: Allow for records to be supported by the type system
-	[string]: DataRecord,
-	Value: any,
+	[string]: Record,
+	
+	read withValue: (self: Record, value: any) -> Record,
+	read value: (self: Record) -> any,
 }
 
-export type Database = {
-	write __index: Database,
-	write Template: SimpleDataRecord,
+export type Struct = {
+	write __index: Struct,
+	write Template: SimpleRecord,
 	
 	--- Create a new record based on the database
-	read newRecord: (self: Database) -> DataRecord,
+	read newRecord: (self: Struct) -> Record,
 	--- Returns the internal template of the record used to construct
 	--- the database
-	read frozenTemplate: (self: Database) -> SimpleDataRecord
+	read frozenTemplate: (self: Struct) -> SimpleRecord
 }
 
-export type DatabaseBuilder = {
-	write __index: DatabaseBuilder,
+export type StructBuilder = {
+	write __index: StructBuilder,
 	-- Allows for extenders to have more control over the specifics
 	write __extend: Named<(true | "clone")?>,
-	write Parent: DatabaseBuilder?,
+	write Parent: StructBuilder?,
 	write Value: any?,
 	
 	--- Create the blueprint for a record
 	---
 	--- @param name the name associated with the record
 	---
-	--- @return a DatabaseBuilder for the created record
-	read templateRecord: (self: DatabaseBuilder, name: string) -> DatabaseBuilder,
+	--- @return a StructBuilder for the created record
+	read templateRecord: (self: StructBuilder, name: string) -> StructBuilder,
 	--- Build the blueprint for the record
 	---
-	--- @return the holding record's DatabaseBuilder
-	read build: (self: DatabaseBuilder) -> DatabaseBuilder,
+	--- @return the holding record's StructBuilder
+	read build: (self: StructBuilder) -> StructBuilder,
 	
-	read withValue: (self: DatabaseBuilder, value: any) -> DatabaseBuilder,
+	read withValue: (self: StructBuilder, value: any) -> StructBuilder,
 	
-	read toDatabase: (self: DatabaseBuilder) -> Database
+	read toStruct: (self: StructBuilder) -> Struct
 }
 
 local Creator = {}
 local Extendor = {}
 
-local DatabaseBuilder = {}
-DatabaseBuilder.__index = DatabaseBuilder
-DatabaseBuilder.__extend = Extendor
+local StructBuilder = {}
+StructBuilder.__index = StructBuilder
+StructBuilder.__extend = Extendor
 
-local Database = {}
-Database.__index = Database
+local Struct = {}
+Struct.__index = Struct
 
-local DataRecord = {}
-DataRecord.__index = DataRecord
+local Record = {}
+Record.__index = Record
 
-function DatabaseBuilder:templateRecord(name: string)
+function StructBuilder:templateRecord(name: string)
 	local init = { Parent = self }
 	self[name] = init
-	return setmetatable(init, DatabaseBuilder)
+	return setmetatable(init, StructBuilder)
 end
 
-function DatabaseBuilder:build()
+function StructBuilder:build()
 	return self.Parent or self
 end
 
-function DatabaseBuilder:withValue(value: any)
+function StructBuilder:withValue(value: any)
 	self.Value = value
 	return self
 end
 
-function DatabaseBuilder:toDatabase()
+function StructBuilder:toStruct()
 	local function removeParent(data: {[any]: any})
 		for name, record in data do
 			if name == "Value" or Extendor[name] then
@@ -87,16 +89,16 @@ function DatabaseBuilder:toDatabase()
 			end
 			
 			record.Parent = nil
-			table.freeze(record :: DatabaseBuilder)
+			table.freeze(record :: StructBuilder)
 			removeParent(record)
 		end 
 	end
 	
 	removeParent(self)
 	
-	table.freeze(self :: DatabaseBuilder)
+	table.freeze(self :: StructBuilder)
 	
-	return setmetatable({Template = self}, Database)
+	return setmetatable({Template = self}, Struct)
 end
 
 @native
@@ -119,21 +121,32 @@ local function deepCopy(data: {[any]: any})
 		
 		copy[key] = deepCopy(value)
 	end
-	return setmetatable(copy, DataRecord)
+	return setmetatable(copy, Record)
 end
 
 -- subject to alot of change when extending
-function Database:newRecord()
+function Struct:newRecord()
 	return deepCopy(self.Template)
 end
 
 -- used for comparison
-function Database:frozenTemplate()
+function Struct:frozenTemplate()
 	return self.Template
 end
 
-function Creator.databaseBuilder()
-	return setmetatable({}, DatabaseBuilder) :: DatabaseBuilder
+-- commonly overridden
+function Record:withValue(value: any)
+	self.Value = value
+	return self
+end
+
+-- slower, but ensures extenders can more easily modify
+function Record:value()
+	return self.Value
+end
+
+function Creator.structBuilder()
+	return setmetatable({}, StructBuilder) :: StructBuilder
 end
 
 return Creator

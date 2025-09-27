@@ -4,88 +4,78 @@ local Creator = require("../src")
 -- the internals can be modified by other extenders
 -- to be more optimal for output size, memory, or speed
 
-type DatabaseBuilder = Creator.DatabaseBuilder
+type StructBuilder = Creator.StructBuilder
 
-type Database = Creator.Database
-type DataRecord = Creator.DataRecord
-type SimpleDataRecord = Creator.SimpleDataRecord
+type Struct = Creator.Struct
+type Record = Creator.Record
+type SimpleRecord = Creator.SimpleRecord
 
 type Named<T> = {[string]: T}
 type Replicator = (path: string, value: any)->()
 
-type ReplicatorDatabaseBuilder = {
-	write __index: ReplicatorDatabaseBuilder,
+type ReplicatorStructBuilder = {
+	write __index: ReplicatorStructBuilder,
 	write __extend: Named<(true | "clone")?>,
-	write Parent: ReplicatorDatabaseBuilder?,
+	write Parent: ReplicatorStructBuilder?,
 	write Value: any?,
 	write Replicator: Replicator?,
 	
-	templateRecord: (self: ReplicatorDatabaseBuilder, name: string) -> ReplicatorDatabaseBuilder,
-	build: (self: ReplicatorDatabaseBuilder) -> ReplicatorDatabaseBuilder,
+	templateRecord: (self: ReplicatorStructBuilder, name: string) -> ReplicatorStructBuilder,
+	build: (self: ReplicatorStructBuilder) -> ReplicatorStructBuilder,
 	
-	withValue: (self: ReplicatorDatabaseBuilder, value: any) -> ReplicatorDatabaseBuilder,
-	withReplicator: (self: ReplicatorDatabaseBuilder, replicator: Replicator) -> ReplicatorDatabaseBuilder,
+	withValue: (self: ReplicatorStructBuilder, value: any) -> ReplicatorStructBuilder,
+	withReplicator: (self: ReplicatorStructBuilder, replicator: Replicator) -> ReplicatorStructBuilder,
 	
-	toDatabase: (self: ReplicatorDatabaseBuilder) -> Database
+	toStruct: (self: ReplicatorStructBuilder) -> Struct
 }
 
 type ReplicatorCreator = {
-	databaseBuilder: () -> ReplicatorDatabaseBuilder
+	structBuilder: () -> ReplicatorStructBuilder
 }
 
-local dbBuilder: ReplicatorCreator = Creator.databaseBuilder
+local builder: ReplicatorCreator = Creator.structBuilder
 
-local dbBuilderMethods = dbBuilder().__index
-local dbMethods = dbBuilder():toDatabase().__index
-local drMethods = dbBuilder():toDatabase():newRecord().__index
+local builderMethods = builder().__index
+local recordMethods = builder():toStruct():newRecord().__index
 
 -- Replicator -- Pass changes around
 -- Could be wrong, it is rather complex and there is no implementation 
 -- of Creator available to verify correctness.
 --
--- DatabaseBuilder
+-- StructBuilder
 --     Add withReplicator((path: string, value: any)->())
--- Database
---     newRecord now passes an object referencing the data
---         instead of the data itself
--- DataRecord
---     Updated to use __newindex function ^
-dbBuilderMethods.__extend.Replicator = true
-dbBuilderMethods.__extend[1] = true -- [1] is Value, we have replaced Value!
-local function replicator(self, key: string, value: any)
+--     withValue now refers to the Value
+-- Record
+--     withValue and value now refer to the Value
+
+builderMethods.__extend.Replicator = true
+
+function recordMethods:withValue(value: any)
 	local repl = self.Replicator
 	if repl then
-		repl(key, value)
+		repl("Value", value)
 	end
-	if key == "Value" then
-		rawset(self, 1, value)
-		return 
-	end
-	rawset(self, key, value)
-end
-
-drMethods.__newindex = replicator
-setmetatable(drMethods, {__index = function(self, key: string)
-	if key == "Value" then
-		-- sadly self is drMethods and not dataRecord?
-		return rawget(self, 1)
-	end
-	return rawget(self, key)
-end})
-
-function dbBuilderMethods:withValue(value: any)
-	self[1] = value
+	rawset(self, "Value", value)
 	return self
 end
-function dbBuilderMethods:withReplicator(fn: Replicator)
+-- .Value could be used BUT there is no guarantee that
+-- another extension will not modify it to be more optimally stored
+function recordMethods:value()
+	return self.Value
+end
+
+function builderMethods:withValue(value: any)
+	self.Value = value
+	return self
+end
+function builderMethods:withReplicator(fn: Replicator)
 	self.Replicator = fn
 	return self
 end
 
 local Replicator: ReplicatorCreator = Creator
 
--- NOT WORKING YET
-local a = Replicator.databaseBuilder()
+local a = Replicator.structBuilder()
 	:withReplicator(function(path: string, value) 
 		print(1, path, value)
 	end)
@@ -98,15 +88,10 @@ local a = Replicator.databaseBuilder()
 			:withValue(2)
 		:build()
 	:build()
-	:toDatabase()
+	:toStruct()
 	:newRecord()
 
--- so we need to probably modify newRecord to be.. better
--- the below code does NOT call the replicator
-a.Value = 5
-a.Foo.Value = 6
--- now the issue is that if it exists, we need to do some extra work
--- so we could instead store it in [1]?
+a:withValue(5)
+a.Foo:withValue(6)
 
-print(a.Value)
-print(getmetatable(a), a)
+print(a)

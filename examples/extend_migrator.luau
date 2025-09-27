@@ -1,64 +1,63 @@
 local Creator = require("../src")
 
-type DatabaseBuilder = Creator.DatabaseBuilder
+type StructBuilder = Creator.StructBuilder
 
-type Database = Creator.Database
-type DataRecord = Creator.DataRecord
-type SimpleDataRecord = Creator.SimpleDataRecord
+type Struct = Creator.Struct
+type Record = Creator.Record
+type SimpleRecord = Creator.SimpleRecord
 
 type Named<T> = {[string]: T}
-type Migrator = (data: DataRecord) -> DataRecord
+type Migrator = (data: Record) -> Record
 
-type MigratorDatabase = {
-	write __index: MigratorDatabase,
-	write Template: SimpleDataRecord,
+type MigratorStruct = {
+	write __index: MigratorStruct,
+	write Template: SimpleRecord,
 	
-	newRecord: (self: MigratorDatabase) -> DataRecord,
-	frozenTemplate: (self: MigratorDatabase) -> SimpleDataRecord,
+	newRecord: (self: MigratorStruct) -> Record,
+	frozenTemplate: (self: MigratorStruct) -> SimpleRecord,
 
-	loadRecord: (self: MigratorDatabase, data: buffer) -> DataRecord,
-	version: (self: MigratorDatabase) -> number,
-	encodeRecord: (self: MigratorDatabase, record: DataRecord) -> buffer
+	loadRecord: (self: MigratorStruct, data: {[any]: any}) -> Record,
+	version: (self: MigratorStruct) -> number,
 }
 
-type MigratorDatabaseBuilder = {
-	write __index: MigratorDatabaseBuilder,
+type MigratorStructBuilder = {
+	write __index: MigratorStructBuilder,
 	write __extend: Named<(true | "clone")?>,
-	write Parent: MigratorDatabaseBuilder?,
+	write Parent: MigratorStructBuilder?,
 	write Value: any?,
 	write Version: number?,
 	write Migrator: Migrator?,
 	
-	templateRecord: (self: MigratorDatabaseBuilder, name: string) -> MigratorDatabaseBuilder,
-	build: (self: MigratorDatabaseBuilder) -> MigratorDatabaseBuilder,
+	templateRecord: (self: MigratorStructBuilder, name: string) -> MigratorStructBuilder,
+	build: (self: MigratorStructBuilder) -> MigratorStructBuilder,
 	
-	withValue: (self: MigratorDatabaseBuilder, value: any) -> MigratorDatabaseBuilder,
-	withVersion: (self: MigratorDatabaseBuilder, version: number) -> MigratorDatabaseBuilder,
-	withMigrator: (self: MigratorDatabaseBuilder, fn: Migrator) -> MigratorDatabaseBuilder,
+	withValue: (self: MigratorStructBuilder, value: any) -> MigratorStructBuilder,
+	withVersion: (self: MigratorStructBuilder, version: number) -> MigratorStructBuilder,
+	withMigrator: (self: MigratorStructBuilder, fn: Migrator) -> MigratorStructBuilder,
 	
-	toDatabase: (self: MigratorDatabaseBuilder) -> MigratorDatabase
+	toStruct: (self: MigratorStructBuilder) -> MigratorStruct
 }
 
 type MigratorCreator = {
-	databaseBuilder: () -> MigratorDatabaseBuilder
+	structBuilder: () -> MigratorStructBuilder
 }
 
-local dbBuilder: MigratorCreator = Creator.databaseBuilder
+local builder: MigratorCreator = Creator.structBuilder
 
-local dbBuilderMethods = dbBuilder().__index
-local dbMethods = dbBuilder():toDatabase().__index
+local builderMethods = builder().__index
+local methods = builder():toStruct().__index
+local recordMethods = builder():toStruct():newRecord().__index
 
 -- Migrator -- Version control
--- DatabaseBuilder
---     Add Version / Migrator / Id to __extend
+-- StructBuilder
+--     Add Version / Migrator to __extend
 --     Add withVersion(number) and withMigrator((data: DataRecord) -> DataRecord)
--- Database
---     Add loadRecord(buffer): DataRecord and version()
---     Add encodeRecord(DataRecord): buffer
-dbBuilderMethods.__extend.Version = true
-dbBuilderMethods.__extend.Migrator = true
+-- Strcu
+--     Add loadRecord({[any]: any}): DataRecord and version()
+builderMethods.__extend.Version = true
+builderMethods.__extend.Migrator = true
 
-function dbBuilderMethods:withVersion(version: number)
+function builderMethods:withVersion(version: number)
 	if self.Parent then
 		error("Incapable of internal version control")
 	end
@@ -66,35 +65,44 @@ function dbBuilderMethods:withVersion(version: number)
 	return self
 end
 
-function dbBuilderMethods:withMigrator(fn: Migrator)
+function builderMethods:withMigrator(fn: Migrator)
 	self.Migrator = fn
 	return self
 end
 
-function dbMethods:loadRecord(data: buffer)
-	-- decode complexity depends on how dense you want the 
-	-- buffer to be (how much preprocessing you did)
-	if not self.Migrator then
+@native
+local function wrap(data: {[any]: any})
+	-- errors if failure to wrap, meaning that the inserted table
+	-- was not up to code
+	for key, value in data do
+		if key == "Value" then
+			continue
+		end
+		if builderMethods.__extend[key] then
+			continue
+		end
+		if type(value) ~= "table" then
+			continue
+		end
+		wrap(value)
+	end
+	return setmetatable(data, recordMethods)
+end
+
+function methods:loadRecord(data: {[any]: any})
+	if not self.Template.Migrator then
 		return self:newRecord()
 	end
-	return self.Migrator(decode(data))
+	return self.Template.Migrator(wrap(data))
 end
 
-function dbMethods:version()
+function methods:version()
 	return self.Version
-end
-
-function dbMethods:encodeRecord(record: DataRecord): buffer
-	-- encode complexity depends on how dense you want the 
-	-- buffer to be (how much preprocessing to do)
-	-- smaller output sizes may be a priority
-	-- legibility may be priority [JSON]
-	return encode(record)
 end
 
 local Migrator: MigratorCreator = Creator
 
-print(Migrator.databaseBuilder()
+print(Migrator.structBuilder()
 	:withVersion(5)
 	:templateRecord("Foo")
 		:withValue(1)
@@ -102,7 +110,13 @@ print(Migrator.databaseBuilder()
 			:withValue(2)
 		:build()
 	:build()
-	:toDatabase()
+	:toStruct()
 	:newRecord())
+print(Migrator.structBuilder()
+	:withMigrator(function(data) 
+		print(data)
+	end)
+	:toStruct()
+	:loadRecord({1,2,3}))
 
 return Migrator
