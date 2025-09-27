@@ -51,22 +51,32 @@ local drMethods = dbBuilder():toDatabase():newRecord().__index
 -- DataRecord
 --     Updated to use __newindex function ^
 dbBuilderMethods.__extend.Replicator = true
+dbBuilderMethods.__extend[1] = true -- [1] is Value, we have replaced Value!
 local function replicator(self, key: string, value: any)
 	local repl = self.Replicator
 	if repl then
 		repl(key, value)
 	end
-	getmetatable(self).__index[key] = value
+	if key == "Value" then
+		rawset(self, 1, value)
+		return 
+	end
+	rawset(self, key, value)
 end
 
-local newRecord = dbMethods.newRecord
+drMethods.__newindex = replicator
+setmetatable(drMethods, {__index = function(self, key: string)
+	if key == "Value" then
+		-- sadly self is drMethods and not dataRecord?
+		return rawget(self, 1)
+	end
+	return rawget(self, key)
+end})
 
-function dbMethods:newRecord()
-	-- MUCH harder to serialize
-	return setmetatable({}, 
-		{__index = newRecord(self), __newindex = replicator})
+function dbBuilderMethods:withValue(value: any)
+	self[1] = value
+	return self
 end
-
 function dbBuilderMethods:withReplicator(fn: Replicator)
 	self.Replicator = fn
 	return self
@@ -93,7 +103,10 @@ local a = Replicator.databaseBuilder()
 
 -- so we need to probably modify newRecord to be.. better
 -- the below code does NOT call the replicator
-a.Foo.Value = 1
+a.Value = 5
+a.Foo.Value = 6
+-- now the issue is that if it exists, we need to do some extra work
+-- so we could instead store it in [1]?
 
 print(a.Value)
-print(getmetatable(a))
+print(getmetatable(a), a)
