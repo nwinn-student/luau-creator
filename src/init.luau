@@ -3,24 +3,6 @@
 
 type Named<T> = {[string]: T}
 
--- Flawed in that it is a near-duplicate of DatabaseBuilder
---- 
-export type RecordBuilder = {
-	write __index: RecordBuilder,
-	write Value: any?,
-	
-	--- Create the blueprint for a record
-	---
-	--- @param name the name associated with the record
-	---
-	--- @return a RecordBuilder for the created record
-	read templateRecord: (self: RecordBuilder, name: string) -> RecordBuilder,
-	
-	read withValue: (self: RecordBuilder, value: any) -> RecordBuilder,
-	
-	read toRecord: (self: RecordBuilder) -> DataRecord
-}
-
 export type SimpleDataRecord = {
 	-- TODO: Allow for records to be supported by the type system
 	[string]: DataRecord,
@@ -33,8 +15,6 @@ export type DataRecord = {
 	-- TODO: Allow for records to be supported by the type system
 	[string]: DataRecord,
 	Value: any,
-	
-	read builder: (self: DataRecord) -> RecordBuilder
 }
 
 export type Database = {
@@ -51,7 +31,7 @@ export type Database = {
 export type DatabaseBuilder = {
 	write __index: DatabaseBuilder,
 	-- Allows for extenders to have more control over the specifics
-	write __extend: Named<(true | "clone" | "hide" | "avoid")?>,
+	write __extend: Named<(true | "clone")?>,
 	write Parent: DatabaseBuilder?,
 	write Value: any?,
 	
@@ -84,9 +64,6 @@ Database.__index = Database
 local DataRecord = {}
 DataRecord.__index = DataRecord
 
-local RecordBuilder = {}
-RecordBuilder.__index = RecordBuilder
-
 function DatabaseBuilder:templateRecord(name: string)
 	local init = { Parent = self }
 	self[name] = init
@@ -105,14 +82,7 @@ end
 function DatabaseBuilder:toDatabase()
 	local function removeParent(data: {[any]: any})
 		for name, record in data do
-			if name == "Value" then
-				continue
-			end
-			local extend = Extendor[name]
-			if extend then
-				if extend == "hide" then
-					data[name] = nil
-				end
+			if name == "Value" or Extendor[name] then
 				continue
 			end
 			
@@ -139,12 +109,8 @@ local function deepCopy(data: {[any]: any})
 			continue
 		end
 		
-		local extend = Extendor[key]
-		if extend then
-			if extend == "avoid" then
-				continue
-			end
-			copy[key] = if extend == "clone" then
+		if Extendor[key] then
+			copy[key] = if Extendor[key] == "clone" then
 					table.clone(value)
 				else
 					value
@@ -156,28 +122,14 @@ local function deepCopy(data: {[any]: any})
 	return setmetatable(copy, DataRecord)
 end
 
+-- subject to alot of change when extending
 function Database:newRecord()
 	return deepCopy(self.Template)
 end
 
+-- used for comparison
 function Database:frozenTemplate()
 	return self.Template
-end
-
-function DataRecord:builder()
-	return setmetatable(self, RecordBuilder)
-end
-
-function RecordBuilder:templateRecord(name: string)
-	local init = {}
-	self[name] = init
-	return setmetatable(init, RecordBuilder)
-end
-
-RecordBuilder.withValue = DatabaseBuilder.withValue
-
-function RecordBuilder:toRecord()
-	return setmetatable(self, DataRecord)
 end
 
 function Creator.databaseBuilder()

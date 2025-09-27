@@ -1,12 +1,12 @@
 local Creator = require("../src")
 
 type DatabaseBuilder = Creator.DatabaseBuilder
-type RecordBuilder = Creator.RecordBuilder
 
 type Database = Creator.Database
 type DataRecord = Creator.DataRecord
 type SimpleDataRecord = Creator.SimpleDataRecord
 
+type Named<T> = {[string]: T}
 type Migrator = (data: DataRecord) -> DataRecord
 
 type MigratorDatabase = {
@@ -23,7 +23,7 @@ type MigratorDatabase = {
 
 type MigratorDatabaseBuilder = {
 	write __index: MigratorDatabaseBuilder,
-	write __extend: {[string]: true?},
+	write __extend: Named<(true | "clone")?>,
 	write Parent: MigratorDatabaseBuilder?,
 	write Value: any?,
 	write Version: number?,
@@ -43,10 +43,10 @@ type MigratorCreator = {
 	databaseBuilder: () -> MigratorDatabaseBuilder
 }
 
-local dbBuilder = Creator.databaseBuilder
+local dbBuilder: MigratorCreator = Creator.databaseBuilder
 
-local dbBuilderMethods = getmetatable(dbBuilder()).__index
-local dbMethods = getmetatable(dbBuilder():toDatabase()).__index
+local dbBuilderMethods = dbBuilder().__index
+local dbMethods = dbBuilder():toDatabase().__index
 
 -- Migrator -- Version control
 -- DatabaseBuilder
@@ -55,7 +55,6 @@ local dbMethods = getmetatable(dbBuilder():toDatabase()).__index
 -- Database
 --     Add loadRecord(buffer): DataRecord and version()
 --     Add encodeRecord(DataRecord): buffer
-
 dbBuilderMethods.__extend.Version = true
 dbBuilderMethods.__extend.Migrator = true
 
@@ -104,9 +103,6 @@ print(Migrator.databaseBuilder()
 		:build()
 	:build()
 	:toDatabase()
-	:newRecord()
-		:builder()
-			:withValue(4)
-		:toRecord())
+	:newRecord())
 
 return Migrator
