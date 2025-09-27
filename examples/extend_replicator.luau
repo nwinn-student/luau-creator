@@ -77,9 +77,12 @@ local Replicator: ReplicatorCreator = Creator
 -- NOT WORKING YET
 local a = Replicator.databaseBuilder()
 	:withReplicator(function(path: string, value) 
-		print(path, value)
+		print(1, path, value)
 	end)
 	:templateRecord("Foo")
+		:withReplicator(function(path: string, value) 
+			print(2, path, value)
+		end)
 		:withValue(1)
 		:templateRecord("Baz")
 			:withValue(2)
@@ -88,10 +91,9 @@ local a = Replicator.databaseBuilder()
 	:toDatabase()
 	:newRecord()
 
--- if we don't do :toRecord, the value we could have
--- stored elsewhere would become invalid upon use
--- meaning that we could set data to become Builder and use it 
--- like a Record since we assume the value stored was a Record
+-- so we need to probably modify newRecord to be.. better
+-- the below code does NOT call the replicator
+a.Foo.Value = 1
 
 print(a.Value)
 print(getmetatable(a))
