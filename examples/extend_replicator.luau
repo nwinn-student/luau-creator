@@ -5,42 +5,56 @@ local Creator = require("../src")
 -- to be more optimal for output size, memory, or speed
 
 type DatabaseBuilder = Creator.DatabaseBuilder
-type RecordBuilder = Creator.RecordBuilder
 
 type Database = Creator.Database
 type DataRecord = Creator.DataRecord
 type SimpleDataRecord = Creator.SimpleDataRecord
 
-type Attributes<T> = {[string]: T}
+type Named<T> = {[string]: T}
+type Replicator = (path: string, value: any)->()
 
-local dbBuilder = Creator.databaseBuilder
+type ReplicatorDatabaseBuilder = {
+	write __index: ReplicatorDatabaseBuilder,
+	write __extend: Named<(true | "clone")?>,
+	write Parent: ReplicatorDatabaseBuilder?,
+	write Value: any?,
+	write Replicator: Replicator?,
+	
+	templateRecord: (self: ReplicatorDatabaseBuilder, name: string) -> ReplicatorDatabaseBuilder,
+	build: (self: ReplicatorDatabaseBuilder) -> ReplicatorDatabaseBuilder,
+	
+	withValue: (self: ReplicatorDatabaseBuilder, value: any) -> ReplicatorDatabaseBuilder,
+	withReplicator: (self: ReplicatorDatabaseBuilder, replicator: Replicator) -> ReplicatorDatabaseBuilder,
+	
+	toDatabase: (self: ReplicatorDatabaseBuilder) -> Database
+}
 
-local dbBuilderMethods = getmetatable(dbBuilder()).__index
-local dbMethods = getmetatable(dbBuilder():toDatabase()).__index
-local drMethods = getmetatable(dbBuilder():toDatabase():newRecord()).__index
-local rbMethods = getmetatable(dbBuilder():toDatabase():newRecord():builder()).__index
+type ReplicatorCreator = {
+	databaseBuilder: () -> ReplicatorDatabaseBuilder
+}
+
+local dbBuilder: ReplicatorCreator = Creator.databaseBuilder
+
+local dbBuilderMethods = dbBuilder().__index
+local dbMethods = dbBuilder():toDatabase().__index
+local drMethods = dbBuilder():toDatabase():newRecord().__index
 
 -- Replicator -- Pass changes around
 -- Could be wrong, it is rather complex and there is no implementation 
 -- of Creator available to verify correctness.
 --
 -- DatabaseBuilder
---     Add withReplicator((path: string, value: any, isAttribute: boolean)->())
---     withAttributes now wraps the attr table in an object
+--     Add withReplicator((path: string, value: any)->())
 -- Database
 --     newRecord now passes an object referencing the data
 --         instead of the data itself
 -- DataRecord
 --     Updated to use __newindex function ^
--- RecordBuilder
---     withValue now call Replicator when possible
---     withAttributes now wraps the attr table in an object
-
+dbBuilderMethods.__extend.Replicator = true
 local function replicator(self, key: string, value: any)
-	-- Replicator could be stored elsewhere
 	local repl = self.Replicator
 	if repl then
-		repl(key, value, self.isAttr == true)
+		repl(key, value)
 	end
 	getmetatable(self).__index[key] = value
 end
@@ -53,41 +67,18 @@ function dbMethods:newRecord()
 		{__index = newRecord(self), __newindex = replicator})
 end
 
-type Replicator = (path: string, value: any, isAttribute: boolean)->()
 function dbBuilderMethods:withReplicator(fn: Replicator)
 	self.Replicator = fn
-	
-	local attr = self.Attributes
-	if attr then
-		rawset(attr, "Replicator", fn)
-	end
-	
 	return self
 end
 
-function dbBuilderMethods:withAttributes(data: {[string]: any})
-	self.Attributes = setmetatable({Replicator = self.Replicator, isAttr = true}, 
-		{__index = data, __newindex = replicator})
-	return self
-end
-
-function rbMethods:withValue(value: any)
-	local repl = self.Replicator
-	if repl then
-		repl("Value", value, false)
-	end
-	getmetatable(self).__index.Value = value
-	return self
-end
-
-function rbMethods:withAttributes(data: {[string]: any})
-	self.Attributes = setmetatable({Replicator = self.Replicator, isAttr = true}, 
-		{__index = data, __newindex = replicator})
-	return self
-end
+local Replicator: ReplicatorCreator = Creator
 
 -- NOT WORKING YET
-print(Creator.databaseBuilder()
+local a = Replicator.databaseBuilder()
+	:withReplicator(function(path: string, value) 
+		print(path, value)
+	end)
 	:templateRecord("Foo")
 		:withValue(1)
 		:templateRecord("Baz")
@@ -96,5 +87,11 @@ print(Creator.databaseBuilder()
 	:build()
 	:toDatabase()
 	:newRecord()
-		:builder()
-			:withValue(4):toRecord().Value)
+
+-- if we don't do :toRecord, the value we could have
+-- stored elsewhere would become invalid upon use
+-- meaning that we could set data to become Builder and use it 
+-- like a Record since we assume the value stored was a Record
+
+print(a.Value)
+print(getmetatable(a))
