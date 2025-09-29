@@ -83,7 +83,8 @@ function recordMethods:value()
 end
 function recordMethods:record(name: string)
 	local struct = self.StructFinder()
-	return self[2][struct.Relation[name]]
+	
+	return self[2][struct.Relation[name] or name]
 end
 
 
@@ -92,9 +93,9 @@ print(Creator.structBuilder()
 	:templateRecord("Foo")
 		:withId(1)
 		:withValue(2)
-		--:templateRecord("Baz")
-		--	:withValue(2)
-		--:build()
+		:templateRecord("Baz")
+			:withValue(3)
+		:build()
 	:build()
 	:toStruct()
-	:newRecord())--:record("Foo"):value())
+	:newRecord():record("Foo"):record("Baz"):value())
