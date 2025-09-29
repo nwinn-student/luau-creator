@@ -15,6 +15,7 @@ type Attributes<T> = {[string]: T}
 local builder = Creator.structBuilder
 
 local builderMethods = builder().__index
+local structMethods = builder():toStruct().__index
 local recordMethods = builder():toStruct():newRecord().__index
 
 -- Compress: Involves practical usages
@@ -27,7 +28,6 @@ local recordMethods = builder():toStruct():newRecord().__index
 --                     ~20x cheaper output size than nothing
 --            
 
-builderMethods.__extend[1] = "RecordWhenTable"
 builderMethods.__extend.Id = "HideFromRecord"
 builderMethods.__extend.StructFinder = true
 builderMethods.__extend.Relation = "HideFromRecord"
@@ -59,10 +59,6 @@ function builderMethods:templateRecord(name: string)
 	
 	return record
 end
-function builderMethods:withValue(value: any)
-	self[1] = value
-	return self
-end
 function builderMethods:withId(id: number)
 	self.Id = id
 	if not self.Parent then
@@ -77,6 +73,29 @@ function builderMethods:withId(id: number)
 end
 
 recordMethods.withValue = builderMethods.withValue
+
+local newRecord = structMethods.newRecord
+
+function structMethods:newRecord()
+	local function convertValue(data: Record)
+		for name, value in data do
+			if name == "Value" then
+				data[1] = value
+				data.Value = nil
+				continue
+			end
+			if type(value) == "table" then
+				convertValue(value)
+			end
+		end
+	end
+	
+	local record = newRecord(self)
+	
+	convertValue(record)
+	
+	return record
+end
 
 function recordMethods:value()
 	return self[1]
@@ -98,4 +117,4 @@ print(Creator.structBuilder()
 		:build()
 	:build()
 	:toStruct()
-	:newRecord():record("Foo"):record("Baz"):value())
+	:newRecord())--:record("Foo"))--:record("Baz"):value())

@@ -102,15 +102,6 @@ function StructBuilder:toStruct()
 		for name, record in data do
 			local extend = Extendor[name]
 			if extend then
-				-- Since RecordWhenTable reaches into here too...
-				-- it even further complicates possible issues
-				if extend == "RecordWhenTable"
-					and type(record) == "table" then
-					
-					hideElements(record)
-					table.freeze(record :: StructBuilder)
-				end
-				
 				if extend == "HideFromStruct" then
 					data[name] = nil
 				end
@@ -135,30 +126,6 @@ local function deepCopy(data: {[any]: any})
 	for key, value in data do
 		local extend = Extendor[key]
 		if extend then
-			-- Remove?  It means that there MUST be some way to 
-			-- know which Struct is used to create the record.
-			-- while we can do so using a table w/ "ks" mode, key / shrink
-			-- it means that we possibly need ALOT of references
-			
-			-- Extenders could also add a function to Record that
-			-- is created to reference Struct? [expensive and unintuitive]
-			-- Or add it to the record itself instead of the metatable
-			
-			-- FIXME: What if id is [1] in compressor? it fails
-			-- So we must account for conflicts?
-			-- what if we say that if true, we check if it is a table
-			-- if so... idk? since it conflicts w/ attribute
-			-- maybe we have a special?
-			-- like "RecordWhenTable"?
-			-- I do have an issue with constantly adding stuff like this, 
-			-- since if the default Value ([1]) is a table, it fails
-			
-			if extend == "RecordWhenTable"
-				and type(value) == "table" then
-				
-				copy[key] = deepCopy(value)
-				continue
-			end
 			if extend == "HideFromRecord" then
 				continue
 			end
