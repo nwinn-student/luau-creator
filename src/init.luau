@@ -134,6 +134,22 @@ local function deepCopy(data: {[any]: any})
 			-- Extenders could also add a function to Record that
 			-- is created to reference Struct? [expensive and unintuitive]
 			-- Or add it to the record itself instead of the metatable
+			
+			-- FIXME: What if id is [1] in compressor? it fails
+			-- So we must account for conflicts?
+			-- what if we say that if true, we check if it is a table
+			-- if so... idk? since it conflicts w/ attribute
+			-- maybe we have a special?
+			-- like "RecordWhenTable"?
+			-- I do have an issue with constantly adding stuff like this, 
+			-- since if the default Value ([1]) is a table, it fails
+			
+			if extend == "RecordWhenTable"
+				and type(value) == "table" then
+				
+				copy[key] = deepCopy(value)
+				continue
+			end
 			if extend == "HideFromRecord" then
 				continue
 			end
