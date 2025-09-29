@@ -39,8 +39,9 @@ local builderMethods = builder().__index
 local recordMethods = builder():toStruct():newRecord().__index
 
 -- Replicator -- Pass changes around
--- Could be wrong, it is rather complex and there is no implementation 
--- of Creator available to verify correctness.
+-- Much like the migrator example, a single Replicator should be able 
+-- to get ALL changes within the record.  Whether we are 
+-- adding/removing records, changing values, whatever.
 --
 -- StructBuilder
 --     Add withReplicator((path: string, value: any)->())
@@ -49,19 +50,68 @@ local recordMethods = builder():toStruct():newRecord().__index
 --     withValue and value now refer to the Value
 
 builderMethods.__extend.Replicator = true
+builderMethods.__extend.FullName = "HideFromRecord"
+builderMethods.__extend.StructFinder = true
+
+local withValue = recordMethods.withValue
 
 function recordMethods:withValue(value: any)
-	local repl = self.Replicator
-	if repl then
-		repl("Value", value)
+	local function getReplicator(data: Struct)
+		-- Replicator can only be at the topmost level
+		-- data.Parent cannot ever point to data
+		-- [except when using an extension]
+		while data.Parent do
+			data = data.Parent
+		end
+		return data.Replicator
 	end
-	rawset(self, "Value", value)
-	return self
+	
+	local struct = self.StructFinder()
+	local repl = getReplicator(struct)
+	if repl then
+		repl(struct.FullName..".Value", value)
+	end
+	return withValue(self, value)
 end
--- .Value could be used BUT there is no guarantee that
--- another extension will not modify it to be more optimally stored
-function recordMethods:value()
-	return self.Value
+
+local templateRecord = builderMethods.templateRecord
+
+function builderMethods:templateRecord(name: string)
+	-- Performance is not taken into account
+	-- reversing would be faster for deeper records
+	local function getFullName(data: StructBuilder)
+		local parTable = { data.Name }
+		local parent = data.Parent
+		
+		while parent do
+			table.insert(parTable, 1, parent.Name)
+			parent = parent.Parent
+		end
+		
+		return table.concat(parTable, ".")
+	end
+	
+	local record = templateRecord(self, name)
+	
+	if not self.FullName then
+		self.FullName = "<root>"
+		self.Name = "<root>"
+	end
+	
+	record.FullName = getFullName(record)
+	
+	-- Very useful to know about!
+	-- also rather expensive since it can create MANY functions
+	record.StructFinder = function()
+		return record
+	end
+	if not self.StructFinder then
+		self.StructFinder = function()
+			return self
+		end
+	end
+	
+	return record
 end
 
 function builderMethods:withValue(value: any)
@@ -69,6 +119,9 @@ function builderMethods:withValue(value: any)
 	return self
 end
 function builderMethods:withReplicator(fn: Replicator)
+	if self.Parent then
+		error("Incapable of internal replicator")
+	end
 	self.Replicator = fn
 	return self
 end
@@ -80,9 +133,6 @@ local a = Replicator.structBuilder()
 		print(1, path, value)
 	end)
 	:templateRecord("Foo")
-		:withReplicator(function(path: string, value) 
-			print(2, path, value)
-		end)
 		:withValue(1)
 		:templateRecord("Baz")
 			:withValue(2)

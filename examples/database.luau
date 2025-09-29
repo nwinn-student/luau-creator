@@ -37,7 +37,7 @@ local Creator = require("../src")
 	}
 ]]
 
-local Database = Creator.databaseBuilder()
+local Struct = Creator.structBuilder()
 	:templateRecord("Foo")
 		:templateRecord("Baz")
 			:withValue(0)
@@ -55,10 +55,17 @@ local Database = Creator.databaseBuilder()
 	:templateRecord("Sample")
 		:templateRecord("Greeting")
 			:withValue("Welcome")
-			-- Acquaintances, Casual, Close, Intimate
-			:withAttributes({ Connection = "Acquaintances" })
+			-- To support attributes we must extend OR
+			-- assume that attributes are like records
+			-- which is what I will do in this case.
+			:templateRecord("Attributes")
+				:templateRecord("Connection")
+					-- Acquaintances, Casual, Close, Intimate
+					:withValue("Acquaintances")
+				:build()
+			:build()
 		:build()
 	:build()
-	:toDatabase()
+	:toStruct()
 
-print(Database)
+print(Struct)

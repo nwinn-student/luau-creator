@@ -54,8 +54,8 @@ local recordMethods = builder():toStruct():newRecord().__index
 --     Add withVersion(number) and withMigrator((data: DataRecord) -> DataRecord)
 -- Strcu
 --     Add loadRecord({[any]: any}): DataRecord and version()
-builderMethods.__extend.Version = true
-builderMethods.__extend.Migrator = true
+builderMethods.__extend.Version = "HideFromRecord"
+builderMethods.__extend.Migrator = "HideFromRecord"
 
 function builderMethods:withVersion(version: number)
 	if self.Parent then
@@ -66,11 +66,14 @@ function builderMethods:withVersion(version: number)
 end
 
 function builderMethods:withMigrator(fn: Migrator)
+	if self.Parent then
+		error("Incapable of internal migration")
+	end
 	self.Migrator = fn
 	return self
 end
 
-@native
+
 local function wrap(data: {[any]: any})
 	-- errors if failure to wrap, meaning that the inserted table
 	-- was not up to code
@@ -103,6 +106,9 @@ end
 local Migrator: MigratorCreator = Creator
 
 print(Migrator.structBuilder()
+	:withMigrator(function(data) 
+		print(data)
+	end)
 	:withVersion(5)
 	:templateRecord("Foo")
 		:withValue(1)

@@ -13,10 +13,13 @@ export type Record = {
 	write __index: Record,
 	
 	-- TODO: Allow for records to be supported by the type system
-	[string]: Record,
+	-- TODO: Allow for value() to by supported by the type system
 	
+	--- 
 	read withValue: (self: Record, value: any) -> Record,
 	read value: (self: Record) -> any,
+	
+	read record: (self: Record, name: string) -> Record
 }
 
 export type Struct = {
@@ -35,11 +38,14 @@ export type StructBuilder = {
 	-- Allows for extenders to have more control over the specifics
 	write __extend: Named<(true | "clone")?>,
 	write Parent: StructBuilder?,
+	
+	-- No guarantee!
+	write Name: string?,
 	write Value: any?,
 	
 	--- Create the blueprint for a record
 	---
-	--- @param name the name associated with the record
+	--- @param name record's name
 	---
 	--- @return a StructBuilder for the created record
 	read templateRecord: (self: StructBuilder, name: string) -> StructBuilder,
@@ -54,7 +60,13 @@ export type StructBuilder = {
 }
 
 local Creator = {}
-local Extendor = {}
+local Extendor = {
+	-- Lets extenders avoid wrapping templateRecord in some cases
+	Name = "HideFromStruct", -- Removes Name once toStruct is called
+	Value = true, -- Value is referenced when newRecord is called
+	Parent = "HideFromRecord", -- Avoids adding the element when newRecord is called
+	--Attributes = "clone", -- Clones the table when newRecord is called
+}
 
 local StructBuilder = {}
 StructBuilder.__index = StructBuilder
@@ -66,35 +78,42 @@ Struct.__index = Struct
 local Record = {}
 Record.__index = Record
 
+-- Expected to be wrapped
 function StructBuilder:templateRecord(name: string)
-	local init = { Parent = self }
+	local init = { Name = name, Parent = self }
 	self[name] = init
 	return setmetatable(init, StructBuilder)
 end
 
+-- Expected for no adjustments
 function StructBuilder:build()
 	return self.Parent or self
 end
 
+-- Expected to be overridden
 function StructBuilder:withValue(value: any)
 	self.Value = value
 	return self
 end
 
+-- Expected for no adjustments
 function StructBuilder:toStruct()
-	local function removeParent(data: {[any]: any})
+	local function hideElements(data: {[any]: any})
 		for name, record in data do
-			if name == "Value" or Extendor[name] then
+			local extend = Extendor[name]
+			if extend then
+				if extend == "HideFromStruct" then
+					data[name] = nil
+				end
 				continue
 			end
 			
-			record.Parent = nil
+			hideElements(record)
 			table.freeze(record :: StructBuilder)
-			removeParent(record)
 		end 
 	end
 	
-	removeParent(self)
+	hideElements(self)	
 	
 	table.freeze(self :: StructBuilder)
 	
@@ -103,16 +122,22 @@ end
 
 @native
 local function deepCopy(data: {[any]: any})
-	local copy = {
-		Value = data.Value
-	}
+	local copy = {}
 	for key, value in data do
-		if key == "Value" then
-			continue
-		end
-		
-		if Extendor[key] then
-			copy[key] = if Extendor[key] == "clone" then
+		local extend = Extendor[key]
+		if extend then
+			-- Remove?  It means that there MUST be some way to 
+			-- know which Struct is used to create the record.
+			-- while we can do so using a table w/ "ks" mode, key / shrink
+			-- it means that we possibly need ALOT of references
+			
+			-- Extenders could also add a function to Record that
+			-- is created to reference Struct? [expensive and unintuitive]
+			-- Or add it to the record itself instead of the metatable
+			if extend == "HideFromRecord" then
+				continue
+			end
+			copy[key] = if extend == "clone" then
 					table.clone(value)
 				else
 					value
@@ -140,9 +165,18 @@ function Record:withValue(value: any)
 	return self
 end
 
+-- The below two greatly reduce complexity for extenders to 
+-- fit the model of .Value and .Foo, since they may need to 
+-- have a mess of metatable adjustments and use __index
+
 -- slower, but ensures extenders can more easily modify
 function Record:value()
 	return self.Value
+end
+
+-- slower, but ensures extenders can more easily modify
+function Record:record(name: string)
+	return self[name]
 end
 
 function Creator.structBuilder()

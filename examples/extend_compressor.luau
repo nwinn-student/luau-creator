@@ -4,51 +4,79 @@ local Creator = require("../src")
 -- the internals can be modified by other extenders
 -- to be more optimal for output size, memory, or speed
 
-type DatabaseBuilder = Creator.DatabaseBuilder
-type RecordBuilder = Creator.RecordBuilder
+type StructBuilder = Creator.StructBuilder
 
-type Database = Creator.Database
-type DataRecord = Creator.DataRecord
-type SimpleDataRecord = Creator.SimpleDataRecord
+type Struct = Creator.Struct
+type Record = Creator.Record
+type SimpleRecord = Creator.SimpleRecord
 
 type Attributes<T> = {[string]: T}
 
-local dbBuilder = Creator.databaseBuilder
+local builder = Creator.structBuilder
 
-local dbBuilderMethods = getmetatable(dbBuilder()).__index
-local dbMethods = getmetatable(dbBuilder():toDatabase()).__index
-local drMethods = getmetatable(dbBuilder():toDatabase():newRecord()).__index
-local rbMethods = getmetatable(dbBuilder():toDatabase():newRecord():builder()).__index
+local builderMethods = builder().__index
+local methods = builder():toStruct().__index
+local recordMethods = builder():toStruct():newRecord().__index
 
--- Complex: Involves practical usages
+-- Compress: Involves practical usages
 --     Focuses on output size and NOT speed
---     Uses an approach similar to replicator, meaning it can 
---         easily be modified to support replicator
---     Could also easily be modified to restrict Value types
--- DatabaseBuilder
+-- StructBuilder
 --     Add withId
 --     toDatabase reformats the data to be much cheaper
---         There are multiple approaches:
---             1. {Id = {Value, Attributes, Records}}
+--             1. {Id = {Value, Records...}}
 --                 Easy-ish to implement, slow-ish
 --                     ~20x cheaper output size than nothing
---             2. {Value..., Attributes..., Records...}
---                 Harder to implement, cheaper output size, 
---                     more memory intensive, slower
---                     ~20% cheaper than 1 on avg
--- Database
---     newRecord now passes a nearly unreadable record w/ 
---         a metatable to make it seem normal
+--            
+
+builderMethods.__extend[1] = true
+builderMethods.__extend.Id = "HideFromRecord"
+builderMethods.__extend.StructFinder = true
 
 
-print(Creator.databaseBuilder()
+local templateRecord = builderMethods.templateRecord
+
+function builderMethods:templateRecord(name: string)
+	local record = templateRecord(self, name)
+	-- Very useful to know about!
+	-- also rather expensive since it can create MANY functions
+	record.StructFinder = function()
+		return record
+	end
+	if not self.StructFinder then
+		self.StructFinder = function()
+			return self
+		end
+	end
+	
+	return record
+end
+function builderMethods:withValue(value: any)
+	self[1] = value
+	return self
+end
+function builderMethods:withId(id: number)
+	-- Unsure, maybe we re-attach??
+	self.Id = id
+	return self
+end
+
+recordMethods.withValue = builderMethods.withValue
+
+function recordMethods:value()
+	return self[1]
+end
+function recordMethods:record(name: string)
+	local struct = self.StructFinder()
+	
+	return self[2][struct[name].Id]
+end
+
+print(Creator.structBuilder()
 	:templateRecord("Foo")
 		:withValue(1)
 		:templateRecord("Baz")
 			:withValue(2)
 		:build()
 	:build()
-	:toDatabase()
-	:newRecord()
-		:builder()
-			:withValue(4):toRecord())
+	:toStruct()
+	:newRecord())
