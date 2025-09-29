@@ -30,6 +30,7 @@ local recordMethods = builder():toStruct():newRecord().__index
 builderMethods.__extend[1] = "RecordWhenTable"
 builderMethods.__extend.Id = "HideFromRecord"
 builderMethods.__extend.StructFinder = true
+builderMethods.__extend.Relation = "HideFromRecord"
 
 
 local templateRecord = builderMethods.templateRecord
@@ -37,6 +38,7 @@ local templateRecord = builderMethods.templateRecord
 function builderMethods:templateRecord(name: string)
 	if not self[2] then
 		self[2] = {}
+		self.Relation = {}
 	end
 	
 	local record = templateRecord(self, name)
@@ -62,10 +64,7 @@ function builderMethods:withValue(value: any)
 	return self
 end
 function builderMethods:withId(id: number)
-	-- Unsure, maybe we re-attach??
-	-- somehow broke things.. hmm
 	self.Id = id
-	
 	if not self.Parent then
 		return self
 	end
@@ -73,6 +72,7 @@ function builderMethods:withId(id: number)
 	local records = self.Parent[2]
 	records[self.Name] = nil
 	records[id] = self
+	self.Parent.Relation[self.Name] = id
 	return self
 end
 
@@ -83,12 +83,9 @@ function recordMethods:value()
 end
 function recordMethods:record(name: string)
 	local struct = self.StructFinder()
-	print(struct) -- so we need to somehow save the relationship
-	-- so maybe Relation = {...} 
-	-- where ... is the name = id pairs
-	-- we can also make it hidden from records
-	return self[2][struct[name].Id]
+	return self[2][struct.Relation[name]]
 end
+
 
 print(Creator.structBuilder()
 	:withValue(5)
@@ -100,4 +97,4 @@ print(Creator.structBuilder()
 		--:build()
 	:build()
 	:toStruct()
-	:newRecord():record("Foo"):value())
+	:newRecord())--:record("Foo"):value())

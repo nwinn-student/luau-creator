@@ -102,6 +102,15 @@ function StructBuilder:toStruct()
 		for name, record in data do
 			local extend = Extendor[name]
 			if extend then
+				-- Since RecordWhenTable reaches into here too...
+				-- it even further complicates possible issues
+				if extend == "RecordWhenTable"
+					and type(record) == "table" then
+					
+					hideElements(record)
+					table.freeze(record :: StructBuilder)
+				end
+				
 				if extend == "HideFromStruct" then
 					data[name] = nil
 				end
