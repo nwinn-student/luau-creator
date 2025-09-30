@@ -10,7 +10,26 @@ type Struct = Creator.Struct
 type Record = Creator.Record
 type SimpleRecord = Creator.SimpleRecord
 
-type Attributes<T> = {[string]: T}
+type Named<T> = {[string]: T}
+
+type CompressorStructBuilder = {
+	write __index: CompressorStructBuilder,
+	write __extend: Named<(true | "clone")?>,
+	write Parent: CompressorStructBuilder?,
+	write Value: any?,
+	
+	templateRecord: (self: CompressorStructBuilder, name: string) -> CompressorStructBuilder,
+	build: (self: CompressorStructBuilder) -> CompressorStructBuilder,
+	
+	withValue: (self: CompressorStructBuilder, value: any) -> CompressorStructBuilder,
+	withId: (self: CompressorStructBuilder, id: number) -> CompressorStructBuilder,
+	
+	toStruct: (self: CompressorStructBuilder) -> Struct
+}
+
+type CompressorCreator = {
+	structBuilder: () -> CompressorStructBuilder
+}
 
 local builder = Creator.structBuilder
 
@@ -106,8 +125,9 @@ function recordMethods:record(name: string)
 	return self[2][struct.Relation[name] or name]
 end
 
+local Compressor: CompressorCreator = Creator
 
-print(Creator.structBuilder()
+print(Compressor.structBuilder()
 	:withValue(5)
 	:templateRecord("Foo")
 		:withId(1)
