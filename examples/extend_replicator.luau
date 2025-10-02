@@ -93,22 +93,11 @@ function builderMethods:templateRecord(name: string)
 	
 	local record = templateRecord(self, name)
 	
-	if not self.FullName then
-		self.FullName = "<root>"
-		self.Name = "<root>"
-	end
-	
 	record.FullName = getFullName(record)
 	
-	-- Very useful to know about!
-	-- also rather expensive since it can create MANY functions
+	-- could be stored outside, but adds complexity
 	record.StructFinder = function()
 		return record
-	end
-	if not self.StructFinder then
-		self.StructFinder = function()
-			return self
-		end
 	end
 	
 	return record
@@ -124,6 +113,18 @@ function builderMethods:withReplicator(fn: Replicator)
 	end
 	self.Replicator = fn
 	return self
+end
+
+function Creator.structBuilder()
+	local constructor = builder()
+	
+	constructor.FullName = "<root>"
+	constructor.Name = "<root>"
+	constructor.StructFinder = function()
+		return constructor
+	end
+	
+	return constructor
 end
 
 local Replicator: ReplicatorCreator = Creator

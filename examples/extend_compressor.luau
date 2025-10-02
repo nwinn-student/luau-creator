@@ -67,15 +67,9 @@ function builderMethods:templateRecord(name: string)
 	self[name] = nil
 	self[2][name] = record
 	
-	-- Very useful to know about!
-	-- also rather expensive since it can create MANY functions
+	-- could be stored outside, but adds complexity
 	record.StructFinder = function()
 		return record
-	end
-	if not self.StructFinder then
-		self.StructFinder = function()
-			return self
-		end
 	end
 	
 	return record
@@ -127,6 +121,16 @@ function recordMethods:record(name: string)
 	local struct = self.StructFinder()
 	
 	return self[2][struct.Relation[name] or name]
+end
+
+function Creator.structBuilder()
+	local constructor = builder()
+	
+	constructor.StructFinder = function()
+		return constructor
+	end
+	
+	return constructor
 end
 
 local Compressor: CompressorCreator = Creator
