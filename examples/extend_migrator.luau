@@ -46,6 +46,7 @@ local builder = Creator.structBuilder
 
 local builderMethods = builder().__index
 local structMethods = builder():toStruct().__index
+local recordMethods = builder():toStruct():newRecord().__index
 
 -- Migrator -- Version control
 -- StructBuilder

@@ -64,3 +64,10 @@ print(Creator:structBuilder()
 	:newRecord()
 	:withRecord("what")
 	:withValue(50))
+	
+-- locking down Creator
+table.freeze(builderMethods)
+table.freeze(structMethods)
+table.freeze(recordMethods)
+
+return Creator
