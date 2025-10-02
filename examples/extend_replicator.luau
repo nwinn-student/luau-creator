@@ -127,24 +127,4 @@ function Creator.structBuilder()
 	return constructor
 end
 
-local Replicator: ReplicatorCreator = Creator
-
-local a = Replicator.structBuilder()
-	:withReplicator(function(path: string, value) 
-		print(1, path, value)
-	end)
-	:templateRecord("Foo")
-		:withValue(1)
-		:templateRecord("Baz")
-			:withValue(2)
-		:build()
-	:build()
-	:toStruct()
-	:newRecord()
-
-a:withValue(5)
-a.Foo:withValue(6)
-
-print(a)
-
-return Replicator
+return Creator :: ReplicatorCreator

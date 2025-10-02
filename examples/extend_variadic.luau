@@ -60,12 +60,4 @@ function recordMethods:withRecord(name: string)
 	return self
 end
 
-local Variadic: VariadicCreator = Creator
-
-print(Variadic.structBuilder()
-	:toStruct()
-	:newRecord()
-	:withRecord("hey")
-	:record("hey"):withValue(1))
-
-return Variadic
+return Creator :: VariadicCreator

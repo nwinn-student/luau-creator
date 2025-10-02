@@ -133,18 +133,4 @@ function Creator.structBuilder()
 	return constructor
 end
 
-local Compressor: CompressorCreator = Creator
-
-print(Compressor.structBuilder()
-	:withValue(5)
-	:templateRecord("Foo")
-		:withId(1)
-		:withValue(2)
-		:templateRecord("Baz")
-			:withValue(3)
-		:build()
-	:build()
-	:toStruct()
-	:newRecord())--:record("Foo"))--:record("Baz"):value())
-
-return Compressor
+return Creator :: CompressorCreator

@@ -102,26 +102,4 @@ function structMethods:version()
 	return self.Version
 end
 
-local Migrator: MigratorCreator = Creator
-
-print(Migrator.structBuilder()
-	:withMigrator(function(data) 
-		print(data)
-	end)
-	:withVersion(5)
-	:templateRecord("Foo")
-		:withValue(1)
-		:templateRecord("Baz")
-			:withValue(2)
-		:build()
-	:build()
-	:toStruct()
-	:newRecord())
-print(Migrator.structBuilder()
-	:withMigrator(function(data) 
-		print(data)
-	end)
-	:toStruct()
-	:loadRecord({1,2,3}))
-
-return Migrator
+return Creator :: MigratorCreator

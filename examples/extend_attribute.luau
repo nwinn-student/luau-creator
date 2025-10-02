@@ -77,17 +77,4 @@ function recordMethods:withAttribute(name: string, value: any)
 	return self
 end
 
-local Attribute: AttributeCreator = Creator
-
-print(Attribute.structBuilder()
-	:templateRecord("Foo")
-		:withValue(1)
-		:templateRecord("Baz")
-			:withValue(2)
-			:withAttributes({Bar = 1})
-		:build()
-	:build()
-	:toStruct()
-	:newRecord())
-
-return Attribute
+return Creator :: AttributeCreator
