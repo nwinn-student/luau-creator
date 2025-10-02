@@ -49,7 +49,7 @@ local recordMethods = builder():toStruct():newRecord().__index
 -- Record
 --     withValue and value now refer to the Value
 
-builderMethods.__extend.Replicator = true
+builderMethods.__extend.Replicator = "HideFromRecord"
 builderMethods.__extend.FullName = "HideFromRecord"
 builderMethods.__extend.StructFinder = true
 
