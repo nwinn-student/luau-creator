@@ -5,6 +5,7 @@ local Creator = require("../src")
 -- adding each to ensure there is no easy-to-spot error
 require("./extend_attribute")
 require("./extend_variadic")
+require("./extend_replicator")
 
 local builder = Creator.structBuilder
 
@@ -17,11 +18,15 @@ print(structMethods)
 print(recordMethods)
 
 print(Creator:structBuilder()
+	:withReplicator(function(path: string, value: any)
+		print(path, value)
+	end)
 	:templateRecord("hey")
 		:withValue(5)
 		:withAttributes({hey=1})
 	:build()
 	:toStruct()
 	:newRecord()
-	:withRecord("what"))
+	:withRecord("what")
+	:withValue(50))
 		
