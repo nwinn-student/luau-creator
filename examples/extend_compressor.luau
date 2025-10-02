@@ -120,7 +120,9 @@ end
 function recordMethods:record(name: string)
 	local struct = self.StructFinder()
 	
-	return self[2][struct.Relation[name] or name]
+	local relation = struct.Relation
+	
+	return self[2][relation and relation[name] or name]
 end
 
 function Creator.structBuilder()

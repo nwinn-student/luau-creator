@@ -16,9 +16,9 @@ require("./extend_migrator")
 
 -- Introducing this breaks record(name)
 -- when working w/ withRecord(name)
--- also breaks withRecord
+-- also breaks withValue
 local withValue = recordMethods.withValue
-local withRecord = recordMethods.withRecord
+--local withRecord = recordMethods.withRecord
 
 require("./extend_compressor")
 
@@ -28,28 +28,38 @@ function recordMethods:withValue(value: any)
 	self[1] = value
 	return self
 end
+
+local structHolder = setmetatable({}, { __mode = "ks" })
+
 function recordMethods:withRecord(name: string)
-	withRecord(self, name)
+	local record = {}
 	
-	local record = self[name]
+	local parent = self.StructFinder()
 	
-	self[name] = nil
-	self[2][name] = record
+	local struct = {
+		FullName = parent.FullName .. "." .. name,
+		Parent = parent
+	}
 	
-	-- could be stored outside, but adds complexity
+	structHolder[record] = struct
+	
 	record.StructFinder = function()
-		-- FIXME: How
-		return record -- how do we get access to the.. uh..
+		return structHolder[record]
 	end
+	
+	if not self[2] then
+		self[2] = {}
+		-- No relation since we cannot specify the id
+	end
+	
+	self[2][name] = setmetatable(record, recordMethods)
 	
 	return self
 end
 
-print(builderMethods)
-print(structMethods)
-print(recordMethods)
-
 print(Creator:structBuilder()
+	-- From a performance perspective, this approach for
+	-- replicator is not ideal at all
 	:withReplicator(function(path: string, value: any)
 		print(path, value)
 	end)
@@ -63,8 +73,13 @@ print(Creator:structBuilder()
 	:build()
 	:toStruct()
 	:newRecord()
-	:withRecord("what")
-	:withValue(50))
+		:withRecord("what")
+		:withValue(50)
+		:record("what")
+			:withValue(1)
+			:withRecord("how")
+			:record("how")
+				:withValue(123))
 	
 -- locking down Creator
 table.freeze(builderMethods)
