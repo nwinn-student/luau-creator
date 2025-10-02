@@ -63,9 +63,10 @@ local Creator = {}
 local Extendor = {
 	-- Lets extenders avoid wrapping templateRecord in some cases
 	Name = "HideFromStruct", -- Removes Name once toStruct is called
-	Value = true, -- Value is referenced when newRecord is called
+	Value = "CloneIfTable", -- Clones Value if it is a table, otherwise passes a reference!
 	Parent = "HideFromRecord", -- Avoids adding the element when newRecord is called
 	--Attributes = "clone", -- Clones the table when newRecord is called
+	--Value = true, -- Value is referenced when newRecord is called
 }
 
 local StructBuilder = {}
@@ -101,15 +102,16 @@ function StructBuilder:toStruct()
 	local function hideElements(data: {[any]: any})
 		for name, record in data do
 			local extend = Extendor[name]
-			if extend then
-				if extend == "HideFromStruct" then
-					data[name] = nil
-				end
+			
+			if not extend then
+				hideElements(record)
+				table.freeze(record :: StructBuilder)
 				continue
 			end
 			
-			hideElements(record)
-			table.freeze(record :: StructBuilder)
+			if extend == "HideFromStruct" then
+				data[name] = nil
+			end
 		end 
 	end
 	
@@ -124,18 +126,24 @@ local function deepCopy(data: {[any]: any})
 	local copy = {}
 	for key, value in data do
 		local extend = Extendor[key]
-		if extend then
-			if extend == "HideFromRecord" then
-				continue
-			end
-			copy[key] = if extend == "clone" then
-					table.clone(value)
-				else
-					value
+		
+		if not extend then
+			copy[key] = deepCopy(value)
 			continue
 		end
 		
-		copy[key] = deepCopy(value)
+		if extend == "HideFromRecord" then
+			continue
+		end
+		
+		copy[key] = 
+			if extend == "clone"
+				or (extend == "CloneIfTable"
+					and type(value) == "table")
+			then
+				table.clone(value)
+			else
+				value
 	end
 	return setmetatable(copy, Record)
 end
