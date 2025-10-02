@@ -38,7 +38,8 @@ function recordMethods:withRecord(name: string)
 	
 	-- could be stored outside, but adds complexity
 	record.StructFinder = function()
-		return record
+		-- FIXME: How
+		return record -- how do we get access to the.. uh..
 	end
 	
 	return self
