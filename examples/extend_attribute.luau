@@ -6,6 +6,46 @@ type Struct = Creator.Struct
 type Record = Creator.Record
 type SimpleRecord = Creator.SimpleRecord
 
+type Named<T> = {[string]: T}
+
+type AttributeRecord = {
+	write __index: AttributeRecord,
+	
+	withValue: (self: AttributeRecord, value: any) -> AttributeRecord,
+	value: (self: AttributeRecord) -> any,
+	
+	record: (self: AttributeRecord, name: string) -> AttributeRecord,
+	
+	attribute: (self: AttributeRecord, name: string) -> any,
+	withAttribute: (self: AttributeRecord, name: string, value: any) -> AttributeRecord
+}
+
+type AttributeStruct = {
+	write __index: AttributeStruct,
+	write Template: SimpleRecord,
+	
+	newRecord: (self: AttributeStruct) -> AttributeRecord,
+	frozenTemplate: (self: AttributeStruct) -> SimpleRecord,
+}
+
+type AttributeStructBuilder = {
+	write __index: AttributeStructBuilder,
+	write __extend: Named<(true | "clone")?>,
+	write Parent: AttributeStructBuilder?,
+	write Value: any?,
+	
+	templateRecord: (self: AttributeStructBuilder, name: string) -> AttributeStructBuilder,
+	build: (self: AttributeStructBuilder) -> AttributeStructBuilder,
+	
+	withValue: (self: AttributeStructBuilder, value: any) -> AttributeStructBuilder,
+	
+	toStruct: (self: AttributeStructBuilder) -> AttributeStruct
+}
+
+type AttributeCreator = {
+	structBuilder: () -> AttributeStructBuilder
+}
+
 local builder = Creator.structBuilder
 
 local builderMethods = builder().__index
@@ -14,7 +54,7 @@ local recordMethods = builder():toStruct():newRecord().__index
 -- Attribute
 -- StructBuilder
 --     Add withAttributes(Named<any>)
--- Struct
+-- Record
 --     Add attribute(string), withAttribute(string, any)
 
 builderMethods.__extend.Attributes = "clone"
