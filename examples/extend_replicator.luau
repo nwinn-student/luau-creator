@@ -33,7 +33,7 @@ type ReplicatorCreator = {
 	structBuilder: () -> ReplicatorStructBuilder
 }
 
-local builder: ReplicatorCreator = Creator.structBuilder
+local builder = Creator.structBuilder
 
 local builderMethods = builder().__index
 local recordMethods = builder():toStruct():newRecord().__index
@@ -145,3 +145,5 @@ a:withValue(5)
 a.Foo:withValue(6)
 
 print(a)
+
+return Replicator

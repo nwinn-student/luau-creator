@@ -42,17 +42,16 @@ type MigratorCreator = {
 	structBuilder: () -> MigratorStructBuilder
 }
 
-local builder: MigratorCreator = Creator.structBuilder
+local builder = Creator.structBuilder
 
 local builderMethods = builder().__index
-local methods = builder():toStruct().__index
-local recordMethods = builder():toStruct():newRecord().__index
+local structMethods = builder():toStruct().__index
 
 -- Migrator -- Version control
 -- StructBuilder
 --     Add Version / Migrator to __extend
 --     Add withVersion(number) and withMigrator((data: DataRecord) -> DataRecord)
--- Strcu
+-- Struct
 --     Add loadRecord({[any]: any}): DataRecord and version()
 builderMethods.__extend.Version = "HideFromRecord"
 builderMethods.__extend.Migrator = "HideFromRecord"
@@ -92,14 +91,14 @@ local function wrap(data: {[any]: any})
 	return setmetatable(data, recordMethods)
 end
 
-function methods:loadRecord(data: {[any]: any})
+function structMethods:loadRecord(data: {[any]: any})
 	if not self.Template.Migrator then
 		return self:newRecord()
 	end
 	return self.Template.Migrator(wrap(data))
 end
 
-function methods:version()
+function structMethods:version()
 	return self.Version
 end
 

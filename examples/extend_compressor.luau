@@ -42,9 +42,11 @@ local recordMethods = builder():toStruct():newRecord().__index
 -- StructBuilder
 --     Add withId
 --     toDatabase reformats the data to be much cheaper
---             1. {Id = {Value, Records...}}
---                 Easy-ish to implement, slow-ish
---                     ~20x cheaper output size than nothing
+--       1. {Id = {Value, {Records...}}}
+--         Easy-ish to implement, slow-ish
+--           ~20x cheaper output size than nothing
+--         Records are in a separate table to not conflict
+--           with outside extensions
 --            
 
 builderMethods.__extend.Id = "HideFromRecord"
@@ -91,8 +93,6 @@ function builderMethods:withId(id: number)
 	return self
 end
 
-recordMethods.withValue = builderMethods.withValue
-
 local newRecord = structMethods.newRecord
 
 function structMethods:newRecord()
@@ -119,6 +119,10 @@ end
 function recordMethods:value()
 	return self[1]
 end
+function recordMethods:withValue(value: any)
+	self[1] = value
+	return self
+end
 function recordMethods:record(name: string)
 	local struct = self.StructFinder()
 	
@@ -138,3 +142,5 @@ print(Compressor.structBuilder()
 	:build()
 	:toStruct()
 	:newRecord())--:record("Foo"))--:record("Baz"):value())
+
+return Compressor

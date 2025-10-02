@@ -114,7 +114,6 @@ function StructBuilder:toStruct()
 	end
 	
 	hideElements(self)	
-	
 	table.freeze(self :: StructBuilder)
 	
 	return setmetatable({Template = self}, Struct)
@@ -156,10 +155,6 @@ function Record:withValue(value: any)
 	self.Value = value
 	return self
 end
-
--- The below two greatly reduce complexity for extenders to 
--- fit the model of .Value and .Foo, since they may need to 
--- have a mess of metatable adjustments and use __index
 
 -- slower, but ensures extenders can more easily modify
 function Record:value()
