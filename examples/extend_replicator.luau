@@ -103,6 +103,14 @@ function builderMethods:templateRecord(name: string)
 	return record
 end
 
+-- TODO: modify toStruct to go through records and set fullNames
+-- since the second toStruct is called, all properties are frozen
+-- and the root the the 'self' that called toStruct
+-- there is NO way to know which self will be called prior.
+-- Also the name should be set to root(?)
+-- TODO: modify templateRecord to not set fullNames
+-- TODO: modify structBuilder to not set fullNames
+
 function builderMethods:withValue(value: any)
 	self.Value = value
 	return self
