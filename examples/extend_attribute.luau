@@ -1,50 +1,39 @@
 local Creator = require("../src")
 
-type StructBuilder = Creator.StructBuilder
-
-type Struct = Creator.Struct
-type Record = Creator.Record
-type SimpleRecord = Creator.SimpleRecord
+type Creator<
+		T = unknown, R = unknown, S = unknown
+	> = Creator.Creator<T, unknown, R, S>
+type Builder<
+		T = unknown, R = unknown, S = unknown
+	> = Creator.StructBuilder<T, unknown, R, S>
+type Record<T = unknown> = Creator.Record<T>
 
 type Named<T> = {[string]: T}
 
 type AttributeRecord = {
-	write __index: AttributeRecord,
-	
-	withValue: (self: AttributeRecord, value: any) -> AttributeRecord,
-	value: (self: AttributeRecord) -> any,
-	
-	record: (self: AttributeRecord, name: string) -> AttributeRecord,
-	
-	attribute: (self: AttributeRecord, name: string) -> any,
-	withAttribute: (self: AttributeRecord, name: string, value: any) -> AttributeRecord
+	attribute: (
+		self: Record<AttributeRecord>,
+		name: string
+	) -> any,
+	withAttribute: (
+		self: Record<AttributeRecord>,
+		name: string,
+		value: any
+	) -> Record<AttributeRecord>
+}
+type AttributeSimple = { read Attributes: Named<any> }
+type AttributeBuilder = {
+	withAttributes: (
+		self: Builder<AttributeBuilder, AttributeRecord, AttributeSimple>, 
+		attrs: Named<any>
+	) -> Builder<AttributeBuilder, AttributeRecord, AttributeSimple>
 }
 
-type AttributeStruct = {
-	write __index: AttributeStruct,
-	write Template: SimpleRecord,
-	
-	newRecord: (self: AttributeStruct) -> AttributeRecord,
-	frozenTemplate: (self: AttributeStruct) -> SimpleRecord,
-}
-
-type AttributeStructBuilder = {
-	write __index: AttributeStructBuilder,
-	write __extend: Named<(true | "clone")?>,
-	write Parent: AttributeStructBuilder?,
-	write Value: any?,
-	
-	templateRecord: (self: AttributeStructBuilder, name: string) -> AttributeStructBuilder,
-	build: (self: AttributeStructBuilder) -> AttributeStructBuilder,
-	
-	withValue: (self: AttributeStructBuilder, value: any) -> AttributeStructBuilder,
-	
-	toStruct: (self: AttributeStructBuilder) -> AttributeStruct
-}
-
-type AttributeCreator = {
-	structBuilder: () -> AttributeStructBuilder
-}
+type AttributeCreator = Creator<
+	AttributeBuilder,
+	AttributeRecord,
+	AttributeSimple
+>
 
 local builder = Creator.structBuilder
 
