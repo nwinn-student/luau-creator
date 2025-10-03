@@ -11,7 +11,7 @@ type Record = Creator.Record
 type SimpleRecord = Creator.SimpleRecord
 
 type Named<T> = {[string]: T}
-type Replicator = (value: any)->()
+type Replicator = (name: string, value: any)->()
 
 type ReplicatorRecord = {
 	write __index: ReplicatorRecord,
@@ -22,7 +22,7 @@ type ReplicatorRecord = {
 	record: (self: ReplicatorRecord, name: string) -> ReplicatorRecord,
 	withRecord: (self: ReplicatorRecord, name: string) -> ReplicatorRecord,
 	
-	onChange: (self: ReplicatorRecord, fn: Replicator) -> ReplicatorRecord
+	onChanged: (self: ReplicatorRecord, fn: Replicator) -> ReplicatorRecord
 }
 
 type ReplicatorStruct = {
@@ -60,18 +60,18 @@ local recordMethods = builder():toStruct():newRecord().__index
 -- 
 -- Record
 --     withValue now calls replicator function
---     Add onChanged((value: any)->())
+--     Add onChanged((name: string, value: any)->())
 
 local withValue = recordMethods.withValue
 
 function recordMethods:withValue(value: any)
 	local repl = self.Replicator
 	if repl then
-		repl(value)
+		repl("Value", value)
 	end
 	return withValue(self, value)
 end
-function recordMethods:onChange(fn: Replicator)
+function recordMethods:onChanged(fn: Replicator)
 	self.Replicator = fn
 	return self
 end
