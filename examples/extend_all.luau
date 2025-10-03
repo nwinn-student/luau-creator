@@ -42,7 +42,9 @@ function recordMethods:withRecord(name: string)
 	return self
 end
 
--- withAttributes should call replicator if exists?
+-- withAttribute should call replicator if exists?
+-- Attribute could be stored in a more optimal way, by not saving 
+-- the word Attributes
 
 print(Creator:structBuilder()
 	:withMigrator(function(data: Record)
@@ -56,14 +58,20 @@ print(Creator:structBuilder()
 	:toStruct()
 	:newRecord()
 		:withRecord("what")
-		:onChanged(function(name, value) print(value) end)
+		:withReplicator(function(name, value)
+			print(value)
+		end)
 		:withValue(50)
 		:record("what")
-			:onChanged(function(name, value) print(value) end)
+			:withReplicator(function(name, value)
+				print(value)
+			end)
 			:withValue(1)
 			:withRecord("how")
 			:record("how")
-				:onChanged(function(name, value) print(value) end)
+				:withReplicator(function(name, value)
+					print(value)
+				end)
 				:withValue(123))
 	
 -- locking down Creator

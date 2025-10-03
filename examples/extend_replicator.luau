@@ -22,7 +22,7 @@ type ReplicatorRecord = {
 	record: (self: ReplicatorRecord, name: string) -> ReplicatorRecord,
 	withRecord: (self: ReplicatorRecord, name: string) -> ReplicatorRecord,
 	
-	onChanged: (self: ReplicatorRecord, fn: Replicator) -> ReplicatorRecord
+	withReplicator: (self: ReplicatorRecord, fn: Replicator) -> ReplicatorRecord
 }
 
 type ReplicatorStruct = {
@@ -60,7 +60,7 @@ local recordMethods = builder():toStruct():newRecord().__index
 -- 
 -- Record
 --     withValue now calls replicator function
---     Add onChanged((name: string, value: any)->())
+--     Add withReplicator((name: string, value: any)->())
 
 local withValue = recordMethods.withValue
 
@@ -71,7 +71,7 @@ function recordMethods:withValue(value: any)
 	end
 	return withValue(self, value)
 end
-function recordMethods:onChanged(fn: Replicator)
+function recordMethods:withReplicator(fn: Replicator)
 	self.Replicator = fn
 	return self
 end
