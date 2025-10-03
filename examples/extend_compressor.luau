@@ -68,7 +68,7 @@ function builderMethods:templateRecord(name: string)
 	self[2][name] = record
 	
 	-- could be stored outside, but adds complexity
-	record.StructFinder = function()
+	function record:StructFinder()
 		return record
 	end
 	
@@ -118,7 +118,7 @@ function recordMethods:withValue(value: any)
 	return self
 end
 function recordMethods:record(name: string)
-	local struct = self.StructFinder()
+	local struct = self:StructFinder()
 	
 	local relation = struct.Relation
 	
@@ -128,7 +128,7 @@ end
 function Creator.structBuilder()
 	local constructor = builder()
 	
-	constructor.StructFinder = function()
+	function constructor:StructFinder()
 		return constructor
 	end
 	

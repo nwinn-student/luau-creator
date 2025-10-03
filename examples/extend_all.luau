@@ -18,29 +18,31 @@ require("./extend_replicator")
 local structHolder = setmetatable({}, { __mode = "ks" })
 
 function recordMethods:withRecord(name: string)
-	local record = {}
-	
-	local parent = self.StructFinder()
-	
-	local struct = {
-		Parent = parent
-	}
-	
-	structHolder[record] = struct
-	
-	record.StructFinder = function()
-		return structHolder[record]
+	local structFinder = function(self)
+		return structHolder[self]
 	end
+	
+	local record = setmetatable({
+		StructFinder = structFinder
+	}, recordMethods)
+	
+	structHolder[record] = {
+		Parent = self:StructFinder()
+	}
 	
 	if not self[2] then
 		self[2] = {}
 		-- No relation since we cannot specify the id
 	end
 	
-	self[2][name] = setmetatable(record, recordMethods)
+	-- Call Replicator if exists?
+	
+	self[2][name] = record
 	
 	return self
 end
+
+-- withAttributes should call replicator if exists?
 
 print(Creator:structBuilder()
 	:withMigrator(function(data: Record)
