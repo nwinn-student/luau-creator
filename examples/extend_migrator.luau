@@ -73,10 +73,11 @@ function builderMethods:withMigrator(fn: Migrator)
 	return self
 end
 
-
+-- TODO: Fails to easily conform to extensions
+-- Causes errors when using :StructFinder, meaning
+-- we have to rewrite much more code to account for
+-- this?
 local function wrap(data: {[any]: any})
-	-- errors if failure to wrap, meaning that the inserted table
-	-- was not up to code
 	for key, value in data do
 		if key == "Value" then
 			continue

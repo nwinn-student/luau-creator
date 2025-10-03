@@ -1,35 +1,16 @@
 local Creator = require("../src")
 
--- Most of these are built on assumptions
--- the internals can be modified by other extenders
--- to be more optimal for output size, memory, or speed
+type Creator<T = unknown> = Creator.Creator<T>
+type Builder<T = unknown> = Creator.StructBuilder<T>
 
-type StructBuilder = Creator.StructBuilder
-
-type Struct = Creator.Struct
-type Record = Creator.Record
-type SimpleRecord = Creator.SimpleRecord
-
-type Named<T> = {[string]: T}
-
-type CompressorStructBuilder = {
-	write __index: CompressorStructBuilder,
-	write __extend: Named<(true | "clone")?>,
-	write Parent: CompressorStructBuilder?,
-	write Value: any?,
-	
-	templateRecord: (self: CompressorStructBuilder, name: string) -> CompressorStructBuilder,
-	build: (self: CompressorStructBuilder) -> CompressorStructBuilder,
-	
-	withValue: (self: CompressorStructBuilder, value: any) -> CompressorStructBuilder,
-	withId: (self: CompressorStructBuilder, id: number) -> CompressorStructBuilder,
-	
-	toStruct: (self: CompressorStructBuilder) -> Struct
+type CompressorBuilder = {
+	withId: (
+		self: Builder<CompressorBuilder>,
+		id: number
+	) -> Builder<CompressorBuilder>
 }
 
-type CompressorCreator = {
-	structBuilder: () -> CompressorStructBuilder
-}
+type CompressorCreator = Creator<CompressorBuilder>
 
 local builder = Creator.structBuilder
 
@@ -42,11 +23,9 @@ local recordMethods = builder():toStruct():newRecord().__index
 -- StructBuilder
 --     Add withId
 --     toDatabase reformats the data to be much cheaper
---       1. {Id = {Value, {Records...}}}
---         Easy-ish to implement, slow-ish
---           ~20x cheaper output size than nothing
---         Records are in a separate table to not conflict
---           with outside extensions
+--       {Id = {Value, {Records...}}}
+--       Records are in a separate table to not conflict
+--         with outside extensions
 --            
 
 builderMethods.__extend.Id = "HideFromRecord"
@@ -63,15 +42,12 @@ function builderMethods:templateRecord(name: string)
 	end
 	
 	local record = templateRecord(self, name)
-	
-	self[name] = nil
-	self[2][name] = record
-	
-	-- could be stored outside, but adds complexity
 	function record:StructFinder()
 		return record
 	end
 	
+	self[name] = nil
+	self[2][name] = record
 	return record
 end
 function builderMethods:withId(id: number)
@@ -89,24 +65,22 @@ end
 
 local newRecord = structMethods.newRecord
 
-function structMethods:newRecord()
-	local function convertValue(data: Record)
-		for name, value in data do
-			if name == "Value" then
-				data[1] = value
-				data.Value = nil
-				continue
-			end
-			if type(value) == "table" then
-				convertValue(value)
-			end
+local function convertValue(data: Record)
+	for name, value in data do
+		if name == "Value" then
+			data[1] = value
+			data.Value = nil
+			continue
+		end
+		if type(value) == "table" then
+			convertValue(value)
 		end
 	end
-	
+end
+
+function structMethods:newRecord()
 	local record = newRecord(self)
-	
 	convertValue(record)
-	
 	return record
 end
 
@@ -119,10 +93,11 @@ function recordMethods:withValue(value: any)
 end
 function recordMethods:record(name: string)
 	local struct = self:StructFinder()
-	
 	local relation = struct.Relation
-	
-	return self[2][relation and relation[name] or name]
+	return self[2][
+		relation and relation[name]
+			or name
+	]
 end
 
 function Creator.structBuilder()

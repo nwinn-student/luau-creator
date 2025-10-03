@@ -45,6 +45,10 @@ export type Creator<T = unknown, U = unknown, R = unknown, S = unknown> = {
 	structBuilder: () -> StructBuilder<T,U,R,S>
 }
 
+-- This is a temporary solution, the end goal is to hopefully
+-- automatically create a type based on provided information.
+-- The string singleton rfc will need to be accepted, alongside
+-- some other type solver/inference features I know not yet about
 -- TODO: combine R, since it is expected to be multiple tables
 -- or a table & unknown, which simplifies to the table
 export type Userbase<T, R = Record> = setmetatable<
