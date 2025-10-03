@@ -3,65 +3,59 @@
 
 type Named<T> = {[string]: T}
 
-export type SimpleRecord = {
-	-- TODO: Allow for records to be supported by the type system
-	[string]: Record,
-	read Value: any,
+export type SimpleRecord<T = unknown> = T & {
+	[string]: SimpleRecord<T>,
+	read Value: any
 }
 
-export type Record = {
-	write __index: Record,
-	
-	-- TODO: Allow for records to be supported by the type system
-	-- TODO: Allow for value() to by supported by the type system
-	
-	--- 
-	read withValue: (self: Record, value: any) -> Record,
-	read value: (self: Record) -> any,
-	
-	read record: (self: Record, name: string) -> Record
+export type Record<T = unknown> = T & {
+	withValue: (self: Record<T>, value: any) -> Record<T>,
+	value: (self: Record<T>) -> any,
+	record: (self: Record<T>, name: string) -> Record<T>
 }
 
-export type Struct = {
-	write __index: Struct,
-	write Template: SimpleRecord,
-	
+export type Struct<T = unknown, R = unknown, S = unknown> = T & {
 	--- Create a new record based on the database
-	read newRecord: (self: Struct) -> Record,
+	newRecord: (self: Struct<T,R,S>) -> Record<R>,
 	--- Returns the internal template of the record used to construct
 	--- the database
-	read frozenTemplate: (self: Struct) -> SimpleRecord
+	frozenTemplate: (self: Struct<T,R,S>) -> SimpleRecord<S>
 }
 
-export type StructBuilder = {
-	write __index: StructBuilder,
-	-- Allows for extenders to have more control over the specifics
+export type StructBuilder<T = unknown, U = unknown, R = unknown, S = unknown> = T & {
 	write __extend: Named<(true | "clone")?>,
-	write Parent: StructBuilder?,
-	
-	-- No guarantee!
-	write Name: string?,
-	write Value: any?,
 	
 	--- Create the blueprint for a record
 	---
 	--- @param name record's name
 	---
 	--- @return a StructBuilder for the created record
-	read templateRecord: (self: StructBuilder, name: string) -> StructBuilder,
+	templateRecord: (self: StructBuilder<T,U,R,S>, name: string) -> StructBuilder<T,U,R,S>,
 	--- Build the blueprint for the record
 	---
 	--- @return the holding record's StructBuilder
-	read build: (self: StructBuilder) -> StructBuilder,
+	build: (self: StructBuilder<T,U,R,S>) -> StructBuilder<T,U,R,S>,
 	
-	read withValue: (self: StructBuilder, value: any) -> StructBuilder,
+	withValue: (self: StructBuilder<T,U,R,S>, value: any) -> StructBuilder<T,U,R,S>,
 	
-	read toStruct: (self: StructBuilder) -> Struct
+	toStruct: (self: StructBuilder<T,U,R,S>) -> Struct<U,R,S>
 }
+
+export type Creator<T = unknown, U = unknown, R = unknown, S = unknown> = {
+	structBuilder: () -> StructBuilder<T,U,R,S>
+}
+
+-- TODO: combine R, since it is expected to be multiple tables
+-- or a table & unknown, which simplifies to the table
+export type Userbase<T, R = Record> = setmetatable<
+	T,
+	{
+		__index: R
+	}
+>
 
 local Creator = {}
 local Extendor = {
-	-- Lets extenders avoid wrapping templateRecord in some cases
 	Name = "HideFromStruct", -- Removes Name once toStruct is called
 	Value = "CloneIfTable", -- Clones Value if it is a table, otherwise passes a reference!
 	Parent = "HideFromRecord", -- Avoids adding the element when newRecord is called
@@ -79,45 +73,38 @@ Struct.__index = Struct
 local Record = {}
 Record.__index = Record
 
--- Expected to be wrapped
 function StructBuilder:templateRecord(name: string)
 	local init = { Name = name, Parent = self }
 	self[name] = init
 	return setmetatable(init, StructBuilder)
 end
-
--- Expected for no adjustments
 function StructBuilder:build()
 	return self.Parent or self
 end
-
--- Expected to be overridden
 function StructBuilder:withValue(value: any)
 	self.Value = value
 	return self
 end
 
--- Expected for no adjustments
+local function hideElements(data: {[any]: any})
+	for name, record in data do
+		local extend = Extendor[name]
+		
+		if not extend then
+			hideElements(record)
+			table.freeze(record :: StructBuilder)
+			continue
+		end
+		
+		if extend == "HideFromStruct" then
+			data[name] = nil
+		end
+	end 
+end
+
 function StructBuilder:toStruct()
-	local function hideElements(data: {[any]: any})
-		for name, record in data do
-			local extend = Extendor[name]
-			
-			if not extend then
-				hideElements(record)
-				table.freeze(record :: StructBuilder)
-				continue
-			end
-			
-			if extend == "HideFromStruct" then
-				data[name] = nil
-			end
-		end 
-	end
-	
 	hideElements(self)	
 	table.freeze(self :: StructBuilder)
-	
 	return setmetatable({Template = self}, Struct)
 end
 
@@ -148,28 +135,20 @@ local function deepCopy(data: {[any]: any})
 	return setmetatable(copy, Record)
 end
 
--- subject to alot of change when extending
 function Struct:newRecord()
 	return deepCopy(self.Template)
 end
-
--- used for comparison
 function Struct:frozenTemplate()
 	return self.Template
 end
 
--- commonly overridden
 function Record:withValue(value: any)
 	self.Value = value
 	return self
 end
-
--- slower, but ensures extenders can more easily modify
 function Record:value()
 	return self.Value
 end
-
--- slower, but ensures extenders can more easily modify
 function Record:record(name: string)
 	return self[name]
 end
@@ -178,4 +157,4 @@ function Creator.structBuilder()
 	return setmetatable({}, StructBuilder) :: StructBuilder
 end
 
-return Creator
+return Creator :: Creator
