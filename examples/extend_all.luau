@@ -11,23 +11,9 @@ local recordMethods = builder():toStruct():newRecord().__index
 
 require("./extend_attribute")
 require("./extend_variadic")
-require("./extend_replicator")
 require("./extend_migrator")
-
--- Introducing this breaks record(name)
--- when working w/ withRecord(name)
--- also breaks withValue
-local withValue = recordMethods.withValue
---local withRecord = recordMethods.withRecord
-
 require("./extend_compressor")
-
-function recordMethods:withValue(value: any)
-	withValue(self, value) -- sets .Value
-	self.Value = nil
-	self[1] = value
-	return self
-end
+require("./extend_replicator")
 
 local structHolder = setmetatable({}, { __mode = "ks" })
 
@@ -37,7 +23,6 @@ function recordMethods:withRecord(name: string)
 	local parent = self.StructFinder()
 	
 	local struct = {
-		FullName = parent.FullName .. "." .. name,
 		Parent = parent
 	}
 	
@@ -58,11 +43,6 @@ function recordMethods:withRecord(name: string)
 end
 
 print(Creator:structBuilder()
-	-- From a performance perspective, this approach for
-	-- replicator is not ideal at all
-	:withReplicator(function(path: string, value: any)
-		print(path, value)
-	end)
 	:withMigrator(function(data: Record)
 		print(data)
 	end)
@@ -74,11 +54,14 @@ print(Creator:structBuilder()
 	:toStruct()
 	:newRecord()
 		:withRecord("what")
+		:onChange(function(value) print(value) end)
 		:withValue(50)
 		:record("what")
+			:onChange(function(value) print(value) end)
 			:withValue(1)
 			:withRecord("how")
 			:record("how")
+				:onChange(function(value) print(value) end)
 				:withValue(123))
 	
 -- locking down Creator
