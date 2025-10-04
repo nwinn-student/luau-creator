@@ -7,7 +7,6 @@ type Builder<
 		T = unknown, R = unknown, S = unknown
 	> = Creator.StructBuilder<T, unknown, R, S>
 type Record<T = unknown> = Creator.Record<T>
-
 type Named<T> = {[string]: T}
 
 type AttributeRecord = {
@@ -21,14 +20,15 @@ type AttributeRecord = {
 		value: any
 	) -> Record<AttributeRecord>
 }
-type AttributeSimple = { read Attributes: Named<any> }
+type AttributeSimple = {
+	read Attributes: Named<any>?
+}
 type AttributeBuilder = {
 	withAttributes: (
 		self: Builder<AttributeBuilder, AttributeRecord, AttributeSimple>, 
 		attrs: Named<any>
 	) -> Builder<AttributeBuilder, AttributeRecord, AttributeSimple>
 }
-
 type AttributeCreator = Creator<
 	AttributeBuilder,
 	AttributeRecord,
