@@ -1,46 +1,26 @@
 local Creator = require("../src")
 
-type StructBuilder = Creator.StructBuilder
-
-type Struct = Creator.Struct
+type Creator<T = unknown, U = unknown> = Creator.Creator<T,U>
+type Builder<T = unknown, U = unknown> = Creator.StructBuilder<T,U>
+type Struct<T = unknown> = Creator.Struct<T>
 type Record = Creator.Record
-type SimpleRecord = Creator.SimpleRecord
 
-type Named<T> = {[string]: T}
 type Migrator = (data: Record) -> Record
-
 type MigratorStruct = {
-	write __index: MigratorStruct,
-	write Template: SimpleRecord,
-	
-	newRecord: (self: MigratorStruct) -> Record,
-	frozenTemplate: (self: MigratorStruct) -> SimpleRecord,
-
-	loadRecord: (self: MigratorStruct, data: {[any]: any}) -> Record,
-	version: (self: MigratorStruct) -> number,
+	loadRecord: (self: Struct<MigratorStruct>, data: {[any]: any}) -> Record,
+	version: (self: Struct<MigratorStruct>) -> number,
 }
-
-type MigratorStructBuilder = {
-	write __index: MigratorStructBuilder,
-	write __extend: Named<(true | "clone")?>,
-	write Parent: MigratorStructBuilder?,
-	write Value: any?,
-	write Version: number?,
-	write Migrator: Migrator?,
-	
-	templateRecord: (self: MigratorStructBuilder, name: string) -> MigratorStructBuilder,
-	build: (self: MigratorStructBuilder) -> MigratorStructBuilder,
-	
-	withValue: (self: MigratorStructBuilder, value: any) -> MigratorStructBuilder,
-	withVersion: (self: MigratorStructBuilder, version: number) -> MigratorStructBuilder,
-	withMigrator: (self: MigratorStructBuilder, fn: Migrator) -> MigratorStructBuilder,
-	
-	toStruct: (self: MigratorStructBuilder) -> MigratorStruct
+type MigratorBuilder = {
+	withVersion: (
+		self: Builder<MigratorBuilder, MigratorStruct>,
+		version: number
+	) -> Builder<MigratorBuilder, MigratorStruct>,
+	withMigrator: (
+		self: Builder<MigratorBuilder, MigratorStruct>,
+		fn: Migrator
+	) -> Builder<MigratorBuilder, MigratorStruct>,
 }
-
-type MigratorCreator = {
-	structBuilder: () -> MigratorStructBuilder
-}
+type MigratorCreator = Creator<MigratorBuilder, MigratorStruct>
 
 local builder = Creator.structBuilder
 

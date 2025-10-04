@@ -9,7 +9,6 @@ type CompressorBuilder = {
 		id: number
 	) -> Builder<CompressorBuilder>
 }
-
 type CompressorCreator = Creator<CompressorBuilder>
 
 local builder = Creator.structBuilder
