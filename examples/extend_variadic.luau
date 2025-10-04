@@ -1,48 +1,15 @@
 local Creator = require("../src")
 
-type StructBuilder = Creator.StructBuilder
-
-type Struct = Creator.Struct
-type Record = Creator.Record
-type SimpleRecord = Creator.SimpleRecord
-
-type Named<T> = {[string]: T}
+type Creator<R = unknown> = Creator.Creator<unknown, unknown, R>
+type Record<T = unknown> = Creator.Record<T>
 
 type VariadicRecord = {
-	write __index: VariadicRecord,
-	
-	withValue: (self: VariadicRecord, value: any) -> VariadicRecord,
-	value: (self: VariadicRecord) -> any,
-	
-	record: (self: VariadicRecord, name: string) -> VariadicRecord,
-	withRecord: (self: VariadicRecord, name: string) -> VariadicRecord
+	withRecord: (
+		self: Record<VariadicRecord>,
+		name: string
+	) -> Record<VariadicRecord>
 }
-
-type VariadicStruct = {
-	write __index: VariadicStruct,
-	write Template: SimpleRecord,
-	
-	newRecord: (self: VariadicStruct) -> VariadicRecord,
-	frozenTemplate: (self: VariadicStruct) -> SimpleRecord,
-}
-
-type VariadicStructBuilder = {
-	write __index: VariadicStructBuilder,
-	write __extend: Named<(true | "clone")?>,
-	write Parent: VariadicStructBuilder?,
-	write Value: any?,
-	
-	templateRecord: (self: VariadicStructBuilder, name: string) -> VariadicStructBuilder,
-	build: (self: VariadicStructBuilder) -> VariadicStructBuilder,
-	
-	withValue: (self: VariadicStructBuilder, value: any) -> VariadicStructBuilder,
-	
-	toStruct: (self: VariadicStructBuilder) -> VariadicStruct
-}
-
-type VariadicCreator = {
-	structBuilder: () -> VariadicStructBuilder
-}
+type VariadicCreator = Creator<VariadicRecord>
 
 local builder = Creator.structBuilder
 
