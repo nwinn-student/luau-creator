@@ -1,8 +1,5 @@
 local Creator = require("../src")
 
--- Incorrect, will fix later..
-type Record = Creator.Record
-
 local builder = Creator.structBuilder
 
 local builderMethods = builder().__index
@@ -14,6 +11,68 @@ require("./extend_variadic")
 require("./extend_migrator")
 require("./extend_compressor")
 require("./extend_replicator")
+
+type Struct<T = unknown> = Creator.Struct<T>
+type Record<T = unknown> = Creator.Record<T>
+type Named<T> = {[string]: T}
+
+type Replicator = (name: string, value: any)->()
+type Migrator = (data: Record) -> Record
+
+type AllSimple = {
+	read Attributes: Named<any>?
+}
+type AllRecord = {
+	attribute: (
+		self: Record<AllRecord>,
+		name: string
+	) -> any,
+	withAttribute: (
+		self: Record<AllRecord>,
+		name: string,
+		value: any
+	) -> Record<AllRecord>,
+	
+	withRecord: (
+		self: Record<AllRecord>,
+		name: string
+	) -> Record<AllRecord>,
+	
+	withReplicator: (
+		self: Record<AllRecord>,
+		fn: Replicator
+	) -> Record<AllRecord>
+}
+type AllStruct = {
+	loadRecord: (
+		self: Struct<AllStruct>,
+		data: {[any]: any}
+	) -> Record<AllRecord>,
+	version: (self: Struct<AllStruct>) -> number,
+}
+type ABuilder<T> = Creator.StructBuilder<T, AllStruct, AllRecord, AllSimple>
+type AllBuilder = {
+	withAttributes: (
+		self: ABuilder<AllBuilder>, 
+		attrs: Named<any>
+	) -> ABuilder<AllBuilder>,
+	
+	withVersion: (
+		self: ABuilder<AllBuilder>,
+		version: number
+	) -> ABuilder<AllBuilder>,
+	withMigrator: (
+		self: ABuilder<AllBuilder>,
+		fn: Migrator
+	) -> ABuilder<AllBuilder>,
+	
+	withId: (
+		self: ABuilder<AllBuilder>,
+		id: number
+	) -> ABuilder<AllBuilder>
+}
+
+type AllCreator = Creator.Creator<AllBuilder, AllStruct, AllRecord, AllSimple>
 
 local structHolder = setmetatable({}, { __mode = "ks" })
 
@@ -46,7 +105,9 @@ end
 -- Attribute could be stored in a more optimal way, by not saving 
 -- the word Attributes
 
-print(Creator:structBuilder()
+local AllCreator: AllCreator = Creator
+
+print(AllCreator:structBuilder()
 	:withMigrator(function(data: Record)
 		print(data)
 	end)

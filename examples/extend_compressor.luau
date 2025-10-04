@@ -64,7 +64,7 @@ end
 
 local newRecord = structMethods.newRecord
 
-local function convertValue(data: Record)
+local function convertValue(data: Creator.Record)
 	for name, value in data do
 		if name == "Value" then
 			data[1] = value
