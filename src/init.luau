@@ -3,18 +3,18 @@
 
 type Named<T> = {[string]: T}
 
-export type SimpleRecord<T = unknown> = T & {
+export type SimpleRecord<T = any> = T & {
 	[string]: SimpleRecord<T>,
 	read Value: any
 }
 
-export type Record<T = unknown> = T & {
+export type Record<T = any> = T & {
 	withValue: (self: Record<T>, value: any) -> Record<T>,
 	value: (self: Record<T>) -> any,
 	record: (self: Record<T>, name: string) -> Record<T>
 }
 
-export type Struct<T = unknown, R = unknown, S = unknown> = T & {
+export type Struct<T = any, R = any, S = any> = T & {
 	--- Create a new record based on the database
 	newRecord: (self: Struct<T,R,S>) -> Record<R>,
 	--- Returns the internal template of the record used to construct
@@ -22,7 +22,7 @@ export type Struct<T = unknown, R = unknown, S = unknown> = T & {
 	frozenTemplate: (self: Struct<T,R,S>) -> SimpleRecord<S>
 }
 
-export type StructBuilder<T = unknown, U = unknown, R = unknown, S = unknown> = T & {
+export type StructBuilder<T = any, U = any, R = any, S = any> = T & {
 	write __extend: Named<(true | "clone")?>,
 	
 	--- Create the blueprint for a record
@@ -41,7 +41,7 @@ export type StructBuilder<T = unknown, U = unknown, R = unknown, S = unknown> = 
 	toStruct: (self: StructBuilder<T,U,R,S>) -> Struct<U,R,S>
 }
 
-export type Creator<T = unknown, U = unknown, R = unknown, S = unknown> = {
+export type Creator<T = any, U = any, R = any, S = any> = {
 	structBuilder: () -> StructBuilder<T,U,R,S>
 }
 

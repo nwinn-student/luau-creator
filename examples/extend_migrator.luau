@@ -1,8 +1,8 @@
 local Creator = require("../src")
 
-type Creator<T = unknown, U = unknown> = Creator.Creator<T,U>
-type Builder<T = unknown, U = unknown> = Creator.StructBuilder<T,U>
-type Struct<T = unknown> = Creator.Struct<T>
+type Creator<T = any, U = any> = Creator.Creator<T,U>
+type Builder<T = any, U = any> = Creator.StructBuilder<T,U>
+type Struct<T = any> = Creator.Struct<T>
 type Record = Creator.Record
 
 type Migrator = (data: Record) -> Record
@@ -81,7 +81,7 @@ function structMethods:loadRecord(data: {[any]: any})
 end
 
 function structMethods:version()
-	return self.Version
+	return self.Template.Version
 end
 
 return Creator :: MigratorCreator

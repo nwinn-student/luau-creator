@@ -1,7 +1,7 @@
 local Creator = require("../src")
 
-type Creator<R = unknown> = Creator.Creator<unknown, unknown, R>
-type Record<T = unknown> = Creator.Record<T>
+type Creator<R = any> = Creator.Creator<any, any, R>
+type Record<T = any> = Creator.Record<T>
 
 type VariadicRecord = {
 	withRecord: (

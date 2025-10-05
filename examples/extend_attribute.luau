@@ -1,12 +1,12 @@
 local Creator = require("../src")
 
 type Creator<
-		T = unknown, R = unknown, S = unknown
-	> = Creator.Creator<T, unknown, R, S>
+		T = any, R = any, S = any
+	> = Creator.Creator<T, any, R, S>
 type Builder<
-		T = unknown, R = unknown, S = unknown
-	> = Creator.StructBuilder<T, unknown, R, S>
-type Record<T = unknown> = Creator.Record<T>
+		T = any, R = any, S = any
+	> = Creator.StructBuilder<T, any, R, S>
+type Record<T = any> = Creator.Record<T>
 type Named<T> = {[string]: T}
 
 type AttributeRecord = {

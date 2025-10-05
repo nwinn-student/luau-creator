@@ -12,12 +12,13 @@ require("./extend_migrator")
 require("./extend_compressor")
 require("./extend_replicator")
 
-type Struct<T = unknown> = Creator.Struct<T>
-type Record<T = unknown> = Creator.Record<T>
+type Struct<T = any> = Creator.Struct<T>
+type Record<T = any> = Creator.Record<T>
 type Named<T> = {[string]: T}
 
-type Replicator = (name: string, value: any)->()
-type Migrator = (data: Record) -> Record
+type Mode = "Attribute" | "Record"
+type Replicator = (name: string, value: any, mode: Mode?)->()
+type Migrator = (data: Record<AllRecord>) -> Record<AllRecord>
 
 type AllSimple = {
 	read Attributes: Named<any>?
@@ -107,17 +108,21 @@ end
 
 local AllCreator: AllCreator = Creator
 
-print(AllCreator:structBuilder()
-	:withMigrator(function(data: Record)
+local format = AllCreator:structBuilder()
+	:withMigrator(function(data)
 		print(data)
 	end)
+	:withVersion("v1.0.0")
 	:templateRecord("hey")
 		:withValue(5)
 		:withId(8)
 		:withAttributes({hey=1})
 	:build()
 	:toStruct()
-	:newRecord()
+
+print(format:loadRecord({1,2,3}))
+
+print(format:newRecord()
 		:withRecord("what")
 		:withReplicator(function(name, value)
 			print(value)

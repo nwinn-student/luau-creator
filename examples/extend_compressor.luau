@@ -1,7 +1,7 @@
 local Creator = require("../src")
 
-type Creator<T = unknown> = Creator.Creator<T>
-type Builder<T = unknown> = Creator.StructBuilder<T>
+type Creator<T = any> = Creator.Creator<T>
+type Builder<T = any> = Creator.StructBuilder<T>
 
 type CompressorBuilder = {
 	withId: (
