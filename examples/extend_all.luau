@@ -95,16 +95,55 @@ function recordMethods:withRecord(name: string)
 		-- No relation since we cannot specify the id
 	end
 	
-	-- Call Replicator if exists?
+	local repl = self.Replicator
+	if repl then
+		repl(name, record, "Record")
+	end
 	
 	self[2][name] = record
 	
 	return self
 end
 
--- withAttribute should call replicator if exists?
--- Attribute could be stored in a more optimal way, by not saving 
--- the word Attributes
+function recordMethods:withAttribute(name: string, value: any)
+	assert(self[3], "Unable to set attribute") -- ???
+	
+	local repl = self.Replicator
+	if repl then
+		repl(name, value, "Attribute")
+	end
+	
+	self[3][name] = value
+	return self
+end
+
+function recordMethods:attribute(name: string)
+	if not self[3] then
+		return nil
+	end
+	return self[3][name]
+end
+
+local function convertAttribute(data: Creator.Record)
+	for name, value in data do
+		if name ~= "Attributes" then
+			if type(value) == "table" then
+				convertAttribute(value)
+			end
+			continue
+		end
+		data[3] = value
+		data.Attributes = nil
+		continue
+	end
+end
+
+local newRecord = structMethods.newRecord
+function structMethods:newRecord()
+	local record = newRecord(self)
+	convertAttribute(record)
+	return record
+end
 
 local AllCreator: AllCreator = Creator
 
@@ -121,21 +160,21 @@ local format = AllCreator:structBuilder()
 	:toStruct()
 
 print(format:loadRecord({1,2,3}))
-
+print(format:newRecord())
 print(format:newRecord()
 		:withRecord("what")
-		:withReplicator(function(name, value)
+		:withReplicator(function(name, value, mode) 
 			print(value)
 		end)
 		:withValue(50)
 		:record("what")
-			:withReplicator(function(name, value)
+			:withReplicator(function(name, value, mode)
 				print(value)
 			end)
 			:withValue(1)
 			:withRecord("how")
 			:record("how")
-				:withReplicator(function(name, value)
+				:withReplicator(function(name, value, mode)
 					print(value)
 				end)
 				:withValue(123))
