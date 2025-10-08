@@ -53,10 +53,6 @@ function builderMethods:withMigrator(fn: Migrator)
 	return self
 end
 
--- TODO: Fails to easily conform to extensions
--- Causes errors when using :StructFinder, meaning
--- we have to rewrite much more code to account for
--- this?
 local function wrap(data: {[any]: any})
 	for key, value in data do
 		if key == "Value" then
@@ -73,6 +69,7 @@ local function wrap(data: {[any]: any})
 	return setmetatable(data, recordMethods)
 end
 
+-- loaded MUST be valid
 function structMethods:loadRecord(data: {[any]: any})
 	if not self.Template.Migrator then
 		return self:newRecord()

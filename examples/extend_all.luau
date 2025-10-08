@@ -145,8 +145,55 @@ function structMethods:newRecord()
 	return record
 end
 
-local AllCreator: AllCreator = Creator
+-- TODO: Fails to easily conform to extensions
+-- Causes errors when using :StructFinder, meaning
+-- we have to rewrite much more code to account for
+-- this?
 
+-- basically we need to just add structfinder.. that is all
+local function wrap(data: {[any]: any}, par)
+	local function addFinder(data, par)
+		if par.StructFinder then
+			data.StructFinder = par.StructFinder
+		else
+			local structFinder = function(self)
+				return structHolder[self]
+			end
+			
+			data.StructFinder = structFinder
+			structHolder[data] = par
+		end
+	end
+	print(data, par)
+	if type(data[2]) ~= "table" then
+		addFinder(data, par)
+		return setmetatable(data, recordMethods)
+	end
+	for key, value in data[2] do
+		if type(value) ~= "table" then
+			continue
+		end
+		-- if par[key] is nil, we should maybe make it here?
+		-- and pass that instead?
+		local internalParent = par[key] or {
+			Parent = par:StructFinder()
+		}
+		
+		wrap(value, internalParent)
+	end
+	addFinder(data, par)
+	return setmetatable(data, recordMethods)
+end
+
+function structMethods:loadRecord(data: {[any]: any})
+	local template = self.Template
+	if not template.Migrator then
+		return self:newRecord()
+	end
+	return template.Migrator(wrap(data, template))
+end
+
+local AllCreator: AllCreator = Creator
 local format = AllCreator:structBuilder()
 	:withMigrator(function(data)
 		print(data)
@@ -159,29 +206,31 @@ local format = AllCreator:structBuilder()
 	:build()
 	:toStruct()
 
-print(format:loadRecord({1,2,3}))
-print(format:newRecord())
-print(format:newRecord()
-		:withRecord("what")
-		:withReplicator(function(name, value, mode) 
-			print(value)
-		end)
-		:withValue(50)
-		:record("what")
-			:withReplicator(function(name, value, mode)
-				print(value)
-			end)
-			:withValue(1)
-			:withRecord("how")
-			:record("how")
-				:withReplicator(function(name, value, mode)
-					print(value)
-				end)
-				:withValue(123))
+print(format:loadRecord({1,[2] = {
+	a = {1,2,3}
+},[3] = 3}))
+--print(format:newRecord())
+--print(format:newRecord()
+--		:withRecord("what")
+--		:withReplicator(function(name, value, mode) 
+--			print(value)
+--		end)
+--		:withValue(50)
+--		:record("what")
+--			:withReplicator(function(name, value, mode)
+--				print(value)
+--			end)
+--			:withValue(1)
+--			:withRecord("how")
+--			:record("how")
+--				:withReplicator(function(name, value, mode)
+--					print(value)
+--				end)
+--				:withValue(123))
 	
 -- locking down Creator
-table.freeze(builderMethods)
-table.freeze(structMethods)
-table.freeze(recordMethods)
+--table.freeze(builderMethods)
+--table.freeze(structMethods)
+--table.freeze(recordMethods)
 
 return Creator
