@@ -78,6 +78,10 @@ type AllCreator = Creator.Creator<AllBuilder, AllStruct, AllRecord, AllSimple>
 local structHolder = setmetatable({}, { __mode = "ks" })
 
 function recordMethods:withRecord(name: string)
+	-- what if we are reconstructing a record?
+	-- should we infer "Sample", whose id is 1 to 
+	-- automatically become 1?
+
 	local structFinder = function(self)
 		return structHolder[self]
 	end
@@ -106,7 +110,8 @@ function recordMethods:withRecord(name: string)
 end
 
 function recordMethods:withAttribute(name: string, value: any)
-	assert(self[3], "Unable to set attribute") -- ???
+	assert(type(self[3]) == "table", 
+		"Unable to apply an attribute to a non-table value") -- ???
 	
 	local repl = self.Replicator
 	if repl then
@@ -118,7 +123,7 @@ function recordMethods:withAttribute(name: string, value: any)
 end
 
 function recordMethods:attribute(name: string)
-	if not self[3] then
+	if type(self[3]) ~= "table" then
 		return nil
 	end
 	return self[3][name]
@@ -164,7 +169,7 @@ local function wrap(data: {[any]: any}, par)
 			structHolder[data] = par
 		end
 	end
-	print(data, par)
+	--print(data, par)
 	if type(data[2]) ~= "table" then
 		addFinder(data, par)
 		return setmetatable(data, recordMethods)
@@ -173,10 +178,9 @@ local function wrap(data: {[any]: any}, par)
 		if type(value) ~= "table" then
 			continue
 		end
-		-- if par[key] is nil, we should maybe make it here?
-		-- and pass that instead?
+		
 		local internalParent = par[key] or {
-			Parent = par:StructFinder()
+			Parent = par
 		}
 		
 		wrap(value, internalParent)
@@ -197,6 +201,8 @@ local AllCreator: AllCreator = Creator
 local format = AllCreator:structBuilder()
 	:withMigrator(function(data)
 		print(data)
+		print(data:value())
+		print(data:record("a"))
 	end)
 	:withVersion("v1.0.0")
 	:templateRecord("hey")
@@ -206,9 +212,11 @@ local format = AllCreator:structBuilder()
 	:build()
 	:toStruct()
 
-print(format:loadRecord({1,[2] = {
-	a = {1,2,3}
-},[3] = 3}))
+local loaded = format:loadRecord({1,[2] = {
+	a = {1,
+	[2] = {1, b = {}}
+	,[3] = 3}
+},[3] = 3})
 --print(format:newRecord())
 --print(format:newRecord()
 --		:withRecord("what")

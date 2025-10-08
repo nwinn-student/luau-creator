@@ -54,14 +54,15 @@ function builderMethods:withAttributes(attrs: Named<any>)
 end
 
 function recordMethods:attribute(name: string)
-	if not self.Attributes then
+	if type(self.Attributes) ~= "table" then
 		return nil
 	end
 	return self.Attributes[name]
 end
 
 function recordMethods:withAttribute(name: string, value: any)
-	assert(self.Attributes, "Unable to set attribute") -- ???
+	assert(type(self.Attributes) == "table", 
+		"Unable to apply an attribute to a non-table value") -- ???
 	self.Attributes[name] = value
 	return self
 end
