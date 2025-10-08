@@ -81,6 +81,8 @@ function recordMethods:withRecord(name: string)
 	-- what if we are reconstructing a record?
 	-- should we infer "Sample", whose id is 1 to 
 	-- automatically become 1?
+	-- this allows us to use existing structfinder instead
+	-- of making a new one
 
 	local structFinder = function(self)
 		return structHolder[self]
@@ -109,7 +111,41 @@ function recordMethods:withRecord(name: string)
 	return self
 end
 
+-- what if we have withId for attributes?
+--		id is used to save bytes, attributes are often reused
+--		and the cost is much less since they contain the same 
+--      keys.  Id would, in BuffSer's case, decrease it from 3 -> 2 
+--      bytes per key.  Assuming the ids are 1-128, and ordered,
+--		even more bytes can be saved since the keys won't be saved.
+--		Attributes are also often renamed, added/removed, so the 
+--		frequency of such actions leads towards knowing the ids in 
+--		order to migrate attributes properly.  Which is NOT what we 
+--		want.
+--		
+-- what if we have a way to deduplicate?
+-- 		deduplication is... painful, it has many edge cases
+--		like: What if the value is a default, then the default is 
+--		changed to the value, then a value is changed to a default, 
+--		then the default is reverted?  Rip the value
+--      like: should we do it internally or have a method
+--      the method will recreate, but internally will avoid creating
+--      as much as possible, only upon change (then recursively update
+--		the record)
+--		like: deduplicating does not guarantee a smaller or equal 
+--		serialization size.  It guarantees a much smaller minimum, 
+--		and guarantees a smaller size for data not using the Compressor
+--		format.
+--		like: we could format the deduplicating to be of smaller or 
+--		equal, BUT it comes with performance tradeoffs
+--		--
+--		So all in all.  Deduplication is amazing, but is not worth the 
+--		time to implement.  Especially if the intent is to pass the 
+--		record to others who will use it frequently, not knowing about 
+--		side effects when changing values to a default, not knowing 
+--		the defaults.
+
 function recordMethods:withAttribute(name: string, value: any)
+	-- maybe we construct the attribute table??
 	assert(type(self[3]) == "table", 
 		"Unable to apply an attribute to a non-table value") -- ???
 	
