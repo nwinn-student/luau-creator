@@ -221,7 +221,7 @@ local loaded = format:loadRecord({1,[2] = {
 	,[3] = 3}
 },[3] = 3})
 print(loaded)
---print(format:newRecord())
+print(format:newRecord():records())
 --print(format:newRecord()
 --		:withRecord("what")
 --		:withReplicator(function(name, value, mode) 

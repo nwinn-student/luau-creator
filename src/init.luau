@@ -11,7 +11,8 @@ export type SimpleRecord<T = any> = T & {
 export type Record<T = any> = T & {
 	withValue: (self: Record<T>, value: any) -> Record<T>,
 	value: (self: Record<T>) -> any,
-	record: (self: Record<T>, name: string) -> Record<T>
+	record: (self: Record<T>, name: string) -> Record<T>,
+	records: (self: Record<T>) -> Named<Record<T>>
 }
 
 export type Struct<T = any, R = any, S = any> = T & {
@@ -51,6 +52,7 @@ export type Creator<T = any, U = any, R = any, S = any> = {
 -- some other type solver/inference features I know not yet about
 -- TODO: combine R, since it is expected to be multiple tables
 -- or a table & unknown, which simplifies to the table
+-- Not as useful as I thought
 export type Userbase<T, R = Record> = setmetatable<
 	T,
 	{
@@ -155,6 +157,11 @@ function Record:value()
 end
 function Record:record(name: string)
 	return self[name]
+end
+function Record:records()
+	local clone = table.clone(self)
+	clone.Value = nil
+	return clone
 end
 
 function Creator.structBuilder()

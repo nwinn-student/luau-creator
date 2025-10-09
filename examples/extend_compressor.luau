@@ -30,7 +30,7 @@ local recordMethods = builder():toStruct():newRecord().__index
 builderMethods.__extend.Id = "HideFromRecord"
 builderMethods.__extend.StructFinder = true
 builderMethods.__extend.Relation = "HideFromRecord"
-
+builderMethods.__extend.InverseRelation = "HideFromRecord"
 
 local templateRecord = builderMethods.templateRecord
 
@@ -38,6 +38,7 @@ function builderMethods:templateRecord(name: string)
 	if not self[2] then
 		self[2] = {}
 		self.Relation = {}
+		self.InverseRelation = {}
 	end
 	
 	local record = templateRecord(self, name)
@@ -59,6 +60,7 @@ function builderMethods:withId(id: number)
 	records[self.Name] = nil
 	records[id] = self
 	self.Parent.Relation[self.Name] = id
+	self.Parent.InverseRelation[id] = self.Name
 	return self
 end
 
@@ -91,12 +93,40 @@ function recordMethods:withValue(value: any)
 	return self
 end
 function recordMethods:record(name: string)
+	if type(self[2]) ~= "table" then
+		return nil
+	end
+	
 	local struct = self:StructFinder()
 	local relation = struct.Relation
 	return self[2][
 		relation and relation[name]
 			or name
 	]
+end
+
+-- add records - but do i add records to creator itself?
+-- the only reason for records in creator would be to let users 
+-- more easily understand the api, until solver v2 is in main
+function recordMethods:records()
+	if type(self[2]) ~= "table" then
+		return {}
+	end
+	
+	local inverse = self:StructFinder().InverseRelation
+	local clone = table.clone(self[2])
+	-- it could be all ids..
+	if inverse then
+		for key, value in clone do
+			local name = inverse[key]
+			if name then
+				clone[name] = value
+				clone[key] = nil
+			end
+		end
+	end
+	
+	return clone
 end
 
 function Creator.structBuilder()
