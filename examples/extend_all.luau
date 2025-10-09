@@ -78,27 +78,27 @@ type AllCreator = Creator.Creator<AllBuilder, AllStruct, AllRecord, AllSimple>
 local structHolder = setmetatable({}, { __mode = "ks" })
 
 function recordMethods:withRecord(name: string)
-	-- what if we are reconstructing a record?
-	-- should we infer "Sample", whose id is 1 to 
-	-- automatically become 1?
-	-- this allows us to use existing structfinder instead
-	-- of making a new one
-
-	local structFinder = function(self)
-		return structHolder[self]
-	end
+	local relation = self:StructFinder().Relation
+	local id = relation and relation[name]
+	local structFinder = if id then
+			self.StructFinder
+		else
+			function(self)
+				return structHolder[self]
+			end
 	
 	local record = setmetatable({
-		StructFinder = structFinder
+		StructFinder = structFinder 
 	}, recordMethods)
 	
-	structHolder[record] = {
-		Parent = self:StructFinder()
-	}
+	if id then
+		structHolder[record] = {
+			Parent = self:StructFinder()
+		}
+	end
 	
 	if not self[2] then
 		self[2] = {}
-		-- No relation since we cannot specify the id
 	end
 	
 	local repl = self.Replicator
@@ -106,48 +106,19 @@ function recordMethods:withRecord(name: string)
 		repl(name, record, "Record")
 	end
 	
-	self[2][name] = record
-	
+	self[2][relation[name]] = record
 	return self
 end
 
--- what if we have withId for attributes?
---		id is used to save bytes, attributes are often reused
---		and the cost is much less since they contain the same 
---      keys.  Id would, in BuffSer's case, decrease it from 3 -> 2 
---      bytes per key.  Assuming the ids are 1-128, and ordered,
---		even more bytes can be saved since the keys won't be saved.
---		Attributes are also often renamed, added/removed, so the 
---		frequency of such actions leads towards knowing the ids in 
---		order to migrate attributes properly.  Which is NOT what we 
---		want.
---		
--- what if we have a way to deduplicate?
--- 		deduplication is... painful, it has many edge cases
---		like: What if the value is a default, then the default is 
---		changed to the value, then a value is changed to a default, 
---		then the default is reverted?  Rip the value
---      like: should we do it internally or have a method
---      the method will recreate, but internally will avoid creating
---      as much as possible, only upon change (then recursively update
---		the record)
---		like: deduplicating does not guarantee a smaller or equal 
---		serialization size.  It guarantees a much smaller minimum, 
---		and guarantees a smaller size for data not using the Compressor
---		format.
---		like: we could format the deduplicating to be of smaller or 
---		equal, BUT it comes with performance tradeoffs
---		--
---		So all in all.  Deduplication is amazing, but is not worth the 
---		time to implement.  Especially if the intent is to pass the 
---		record to others who will use it frequently, not knowing about 
---		side effects when changing values to a default, not knowing 
---		the defaults.
+-- records would be a very useful method to have
+-- it would need to return a new table of the name to values
+-- within the existing table.
+-- We would need to add it to Compressor
 
 function recordMethods:withAttribute(name: string, value: any)
-	-- maybe we construct the attribute table??
-	assert(type(self[3]) == "table", 
-		"Unable to apply an attribute to a non-table value") -- ???
+	if type(self[3]) ~= "table" then
+		self[3] = {}
+	end
 	
 	local repl = self.Replicator
 	if repl then
@@ -186,12 +157,6 @@ function structMethods:newRecord()
 	return record
 end
 
--- TODO: Fails to easily conform to extensions
--- Causes errors when using :StructFinder, meaning
--- we have to rewrite much more code to account for
--- this?
-
--- basically we need to just add structfinder.. that is all
 local function wrap(data: {[any]: any}, par)
 	local function addFinder(data, par)
 		if par.StructFinder then
@@ -205,7 +170,6 @@ local function wrap(data: {[any]: any}, par)
 			structHolder[data] = par
 		end
 	end
-	--print(data, par)
 	if type(data[2]) ~= "table" then
 		addFinder(data, par)
 		return setmetatable(data, recordMethods)
@@ -236,9 +200,10 @@ end
 local AllCreator: AllCreator = Creator
 local format = AllCreator:structBuilder()
 	:withMigrator(function(data)
-		print(data)
-		print(data:value())
-		print(data:record("a"))
+		--print(data)
+		--print(data:value())
+		--print(data:record("a"))
+		return data
 	end)
 	:withVersion("v1.0.0")
 	:templateRecord("hey")
@@ -248,11 +213,14 @@ local format = AllCreator:structBuilder()
 	:build()
 	:toStruct()
 
+print(format:loadRecord({}):withRecord("hey"):record("hey"):withValue(1))
+
 local loaded = format:loadRecord({1,[2] = {
 	a = {1,
 	[2] = {1, b = {}}
 	,[3] = 3}
 },[3] = 3})
+print(loaded)
 --print(format:newRecord())
 --print(format:newRecord()
 --		:withRecord("what")

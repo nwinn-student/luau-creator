@@ -55,9 +55,6 @@ end
 
 local function wrap(data: {[any]: any})
 	for key, value in data do
-		if key == "Value" then
-			continue
-		end
 		if builderMethods.__extend[key] then
 			continue
 		end
@@ -69,12 +66,12 @@ local function wrap(data: {[any]: any})
 	return setmetatable(data, recordMethods)
 end
 
--- loaded MUST be valid
 function structMethods:loadRecord(data: {[any]: any})
-	if not self.Template.Migrator then
+	local template = self.Template
+	if not template.Migrator then
 		return self:newRecord()
 	end
-	return self.Template.Migrator(wrap(data))
+	return template.Migrator(wrap(data))
 end
 
 function structMethods:version()
