@@ -21,7 +21,7 @@ local recordMethods = builder():toStruct():newRecord().__index
 --     Focuses on output size and NOT speed
 -- StructBuilder
 --     Add withId
---     toDatabase reformats the data to be much cheaper
+--     toStruct reformats the data to be much cheaper
 --       {Id = {Value, {Records...}}}
 --       Records are in a separate table to not conflict
 --         with outside extensions
@@ -105,9 +105,6 @@ function recordMethods:record(name: string)
 	]
 end
 
--- add records - but do i add records to creator itself?
--- the only reason for records in creator would be to let users 
--- more easily understand the api, until solver v2 is in main
 function recordMethods:records()
 	if type(self[2]) ~= "table" then
 		return {}

@@ -91,7 +91,7 @@ function recordMethods:withRecord(name: string)
 		StructFinder = structFinder 
 	}, recordMethods)
 	
-	if id then
+	if not id then
 		structHolder[record] = {
 			Parent = self:StructFinder()
 		}
@@ -106,14 +106,9 @@ function recordMethods:withRecord(name: string)
 		repl(name, record, "Record")
 	end
 	
-	self[2][relation[name]] = record
+	self[2][id or name] = record
 	return self
 end
-
--- records would be a very useful method to have
--- it would need to return a new table of the name to values
--- within the existing table.
--- We would need to add it to Compressor
 
 function recordMethods:withAttribute(name: string, value: any)
 	if type(self[3]) ~= "table" then
@@ -222,23 +217,23 @@ local loaded = format:loadRecord({1,[2] = {
 },[3] = 3})
 print(loaded)
 print(format:newRecord():records())
---print(format:newRecord()
---		:withRecord("what")
---		:withReplicator(function(name, value, mode) 
---			print(value)
---		end)
---		:withValue(50)
---		:record("what")
---			:withReplicator(function(name, value, mode)
---				print(value)
---			end)
---			:withValue(1)
---			:withRecord("how")
---			:record("how")
---				:withReplicator(function(name, value, mode)
---					print(value)
---				end)
---				:withValue(123))
+print(format:newRecord()
+		:withRecord("what")
+		:withReplicator(function(name, value, mode) 
+			print(value)
+		end)
+		:withValue(50)
+		:record("what")
+			:withReplicator(function(name, value, mode)
+				print(value)
+			end)
+			:withValue(1)
+			:withRecord("how")
+			:record("how")
+				:withReplicator(function(name, value, mode)
+					print(value)
+				end)
+				:withValue(123))
 	
 -- locking down Creator
 --table.freeze(builderMethods)
