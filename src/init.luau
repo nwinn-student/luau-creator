@@ -12,7 +12,7 @@ export type Record<T = any> = T & {
 	withValue: (self: Record<T>, value: any) -> Record<T>,
 	value: (self: Record<T>) -> any,
 	record: (self: Record<T>, name: string) -> Record<T>,
-	records: (self: Record<T>) -> Named<Record<T>>
+	records: (self: Record<T>) -> {[string]: Record<T>}
 }
 
 export type Struct<T = any, R = any, S = any> = T & {

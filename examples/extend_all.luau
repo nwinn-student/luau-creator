@@ -192,52 +192,9 @@ function structMethods:loadRecord(data: {[any]: any})
 	return template.Migrator(wrap(data, template))
 end
 
-local AllCreator: AllCreator = Creator
-local format = AllCreator:structBuilder()
-	:withMigrator(function(data)
-		--print(data)
-		--print(data:value())
-		--print(data:record("a"))
-		return data
-	end)
-	:withVersion("v1.0.0")
-	:templateRecord("hey")
-		:withValue(5)
-		:withId(8)
-		:withAttributes({hey=1})
-	:build()
-	:toStruct()
-
-print(format:loadRecord({}):withRecord("hey"):record("hey"):withValue(1))
-
-local loaded = format:loadRecord({1,[2] = {
-	a = {1,
-	[2] = {1, b = {}}
-	,[3] = 3}
-},[3] = 3})
-print(loaded)
-print(format:newRecord():records())
-print(format:newRecord()
-		:withRecord("what")
-		:withReplicator(function(name, value, mode) 
-			print(value)
-		end)
-		:withValue(50)
-		:record("what")
-			:withReplicator(function(name, value, mode)
-				print(value)
-			end)
-			:withValue(1)
-			:withRecord("how")
-			:record("how")
-				:withReplicator(function(name, value, mode)
-					print(value)
-				end)
-				:withValue(123))
-	
 -- locking down Creator
---table.freeze(builderMethods)
---table.freeze(structMethods)
---table.freeze(recordMethods)
+table.freeze(builderMethods :: {})
+table.freeze(structMethods :: {})
+table.freeze(recordMethods :: {})
 
-return Creator
+return Creator :: AllCreator
